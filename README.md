@@ -6,6 +6,10 @@ The loading of zones, actuators and scenes is supported as well as the execution
 
 It is also possible to listen for radio bus signals.
 
+## Installation
+
+    pip install light-manager-air
+
 ## Examples
 
 Connect to Light Manager Air
