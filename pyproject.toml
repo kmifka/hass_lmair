@@ -1,0 +1,25 @@
+[build-system]
+requires      = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "light-manager-air"
+version = "1.0.0"
+description = "SDK for communication with jbmedia light manager air"
+readme = "README.md"
+authors = [{ name = "Korbinian Mifka", email = "info@korbinian-mifka.com" }]
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+keywords = ["jbmedia", "smart home", "light manager"]
+dependencies = []
+requires-python = ">=3.9"
+
+[project.optional-dependencies]
+dev = ["black", "pytest"]
+
+[project.urls]
+Homepage = "https://github.com/kmifka/lmair-sdk-python.git"
