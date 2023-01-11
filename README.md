@@ -6,29 +6,36 @@ The loading of zones, actuators and scenes is supported as well as the execution
 
 It is also possible to listen for radio bus signals.
 
+For getting the connection to the devices service discovery is also available.
+
 ## Installation
 
     pip install light-manager-air
 
 ## Examples
 
-Connect to Light Manager Air
+### Connect to Light Manager Air by url
 
-    lmair = LMAir("http://lmair")
+    light_manager = LMAir("http://lmair")
 
+### Or connect to Light Manager Air by service discovery (recommended)
 
-Call a specific command
+    light_managers = LMAir.discover()
+    assert len(light_managers) > 0
+    light_manager = light_managers[0]
 
-    zones, scenes = lmair.load_fixtures()
+### Call a specific command
+
+    zones, scenes = light_manager.load_fixtures()
     zones[0].actuators[0].commands[0].call()
 
-Turn a light on when a radio bus signal is received
+### Turn a light on when a radio bus signal is received
 
     def callback(data):
         if data == "12282E9A":
             zones[0].actuators[0].commands[0].call()
-            lmair.stop_radio_bus_listening()
+            light_manager.stop_radio_bus_listening()
 
-    lmair.start_radio_bus_listening(callback)
+    light_manager.start_radio_bus_listening(callback)
 
     
