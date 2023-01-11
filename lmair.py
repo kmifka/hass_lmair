@@ -170,9 +170,11 @@ class _LMConnector:
 
     @staticmethod
     def _get_ip():
-        interfaces = socket.getaddrinfo(host=socket.gethostname(), port=None, family=socket.AF_INET)
-        # return ip address of the first interface
-        return interfaces[0][-1][0]
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
 
 
 class _LMFixture:
