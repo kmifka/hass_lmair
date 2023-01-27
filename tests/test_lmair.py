@@ -20,6 +20,10 @@ class MyTestCase(unittest.TestCase):
     def test_service_discovery(self):
         self._device()
 
+    def test_all_off(self):
+        light_manager = self._device()
+        light_manager.send_command(f"typ,it,did,1833F4A0,aid,215,acmd,0,seq,6")
+
     def test_fixture_loading(self):
         zones, scenes = self._device().load_fixtures()
         print(f"Found {len(zones)} zones and {len(scenes)} scenes.")

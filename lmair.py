@@ -19,9 +19,18 @@ class _LMConnector:
     RECEIVE_IDENTIFIER = "rfit,"
     DISCOVER_MESSAGE = "D"
 
-    def __init__(self, url: str, username: str, password: str, refresh_interval: int = None, receive_port: int = None):
-        self._url = url
-        self._ip: str = self._get_ip()
+    def __init__(self, url: str, username: str, password: str, refresh_interval: int = None,
+                 adapter_ip: str = None, receive_port: int = None):
+        """
+        :param url: url for connecting to light manager. E.g. http://lmair
+        :param username: lan username
+        :param password: lan password
+        :param refresh_interval: interval of tcp connection refresh in seconds
+        :param adapter_ip: Ip of the desired network adapter
+        :param receive_port: port of the tcp connection
+        """
+        self._lm_url = url
+        self._adapter_ip: str = adapter_ip or self._get_default_adapter_ip()
         self._username: str = username
         self._password: str = password
         self._refresh_interval: int = refresh_interval or 20
@@ -32,17 +41,19 @@ class _LMConnector:
         self._refresh_thread: Optional[Thread] = None
 
     @staticmethod
-    def discover(discover_host=None, wait_duration: int = None, discover_port: int = None) -> dict:
+    def discover(discover_target_ip=None, wait_duration: int = None, discover_adapter_ip: str = None,
+                 discover_port: int = None) -> dict:
         """
         Discovers all devices in local network
 
-        :param discover_host: Optional. Specific host for discovery.
+        :param discover_target_ip: Optional. Specific target adapter_ip for discovery.
         :param wait_duration: Optional. Duration in seconds of waiting for response
+        :param discover_adapter_ip:  Optional. Ip of the desired network adapter
         :param discover_port: Optional. Broadcast port
-        :return: Returns a dict with ip addresses as keys and device info as value
+        :return: Returns a dict with adapter_ip addresses as keys and device info as value
         """
 
-        discover_host = discover_host or "255.255.255.255"
+        discover_target_ip = discover_target_ip or "255.255.255.255"
         wait_duration = wait_duration or 3
         discover_port = discover_port or 30303
 
@@ -51,17 +62,17 @@ class _LMConnector:
                 try:
                     data, [host, _] = sock.recvfrom(1024)
                     devices[host] = data.decode()
-                except OSError:
+                except OSError as error:
                     pass
 
         sock = None
 
         try:
-            ip = _LMConnector._get_ip()
+            adapter_ip = discover_adapter_ip or _LMConnector._get_default_adapter_ip()
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            sock.bind((ip, discover_port))
-            sock.sendto(_LMConnector.DISCOVER_MESSAGE.encode(), (discover_host, discover_port))
+            sock.bind((adapter_ip, discover_port))
+            sock.sendto(_LMConnector.DISCOVER_MESSAGE.encode(), (discover_target_ip, discover_port))
 
             stop_event = Event()
 
@@ -91,7 +102,7 @@ class _LMConnector:
 
         def _refresh_connection():
             while not self._stop.is_set():
-                self._send_connect(self._ip)
+                self._send_connect(self._adapter_ip)
                 sleep(self._refresh_interval)
 
         def _receive():
@@ -104,14 +115,14 @@ class _LMConnector:
                     if data.startswith(self.RECEIVE_IDENTIFIER):
                         callback(data.replace(self.RECEIVE_IDENTIFIER, "", 1))
                     else:
-                        self._send_connect(self._ip)
+                        self._send_connect(self._adapter_ip)
                 finally:
                     if new_sock:
                         new_sock.close()
 
         self._socket: socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self._socket.bind((self._ip, self._receive_port))
+        self._socket.bind((self._adapter_ip, self._receive_port))
         self._socket.listen(5)
 
         self._thread = Thread(target=_receive)
@@ -149,9 +160,9 @@ class _LMConnector:
         if self._username or self._password:
             auth = (self._username, self._password)
         if not cmd or not value:
-            response = requests.get(self._url + path, auth=auth)
+            response = requests.get(self._lm_url + path, auth=auth)
         else:
-            response = requests.post(self._url + path, {cmd: value}, auth=auth)
+            response = requests.post(self._lm_url + path, {cmd: value}, auth=auth)
 
         if response.status_code == 401:
             raise AssertionError("Wrong username or password!")
@@ -169,7 +180,7 @@ class _LMConnector:
         self.send("/control", "pcip", ip)
 
     @staticmethod
-    def _get_ip():
+    def _get_default_adapter_ip():
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
         ip = s.getsockname()[0]
@@ -200,14 +211,19 @@ class _LMFixture:
 class LMCommand(_LMFixture):
     """Describing a callable command"""
 
-    def __init__(self, config: ET.Element, connector: _LMConnector):
+    def __init__(self, connector: _LMConnector,
+                 name: Optional[str] = None,
+                 param: Optional[str] = None,
+                 config: Optional[ET.Element] = None):
         """
-        :param config: command part of the config.xml
         :param connector: light manager connector
+        :param name: name of the command
+        :param param: param of the command (e.g. 'cmd=typ,it,did,0996,aid,215,acmd,0,seq,6')
+        :param config: command part of the config.xml (Optional. Only if name and param are None)
         """
-        super().__init__(config.findtext("./name"))
+        super().__init__(name or config.findtext("./name"))
         self._connector = connector
-        self._param = config.findtext("./param")
+        self._param = param or config.findtext("./param")
 
     @property
     def name(self) -> str:
@@ -240,7 +256,7 @@ class LMActuator(_LMFixture):
         """
         super().__init__(config.findtext("./name"))
         self._type = config.findtext("./type") or "scene"
-        self._commands = [LMCommand(command, connector) for command in config.findall("./commandlist/command")]
+        self._commands = [LMCommand(connector, config=command) for command in config.findall("./commandlist/command")]
 
     @property
     def name(self) -> str:
@@ -293,7 +309,9 @@ class LMZone(_LMFixture):
 class LMAir(_LMFixture):
     """Handling communication with jb media light manager air"""
 
-    def __init__(self, url: str, username: str = None, password: str = None, info: str = None):
+    _config = None
+
+    def __init__(self, url: str, username: str = None, password: str = None, adapter_ip: str = None, info: str = None):
         """
         Initiates a new LMAir instance with given data. Only url is mandatory.
         If username, password or info is not given, it will be loaded from the device.
@@ -301,6 +319,7 @@ class LMAir(_LMFixture):
         :param url: url for connecting to light manager. E.g. http://lmair
         :param username: Optional. lan username
         :param password: Optional. lan password
+        :param adapter_ip: Optional. Ip of the network adapter which is connected to light manager
         :param info: Optional. device info
         """
         if not url or not info:
@@ -311,9 +330,9 @@ class LMAir(_LMFixture):
 
         parsed_url = urlparse(url)
 
-        self._host = str(parsed_url.hostname)
+        self._lm_hostname = str(parsed_url.hostname)
 
-        self._url = parsed_url.scheme + "://" + self._host
+        self._lm_url = parsed_url.scheme + "://" + self._lm_hostname
 
         def get_info_value(key: str) -> Optional[str]:
             result = re.search(key + r"[ :](.+?)\r\n", info)
@@ -327,14 +346,14 @@ class LMAir(_LMFixture):
         super().__init__(get_info_value("WhoAmI"))
         self._fw_version = get_info_value("FWVersion")
         self._ssid = get_info_value("SSID")
-        self._connector = _LMConnector(self._url, self._username, self._password)
+        self._connector = _LMConnector(self._lm_url, self._username, self._password, adapter_ip=adapter_ip)
 
     @property
     def host(self):
         """
         :return: host of light manager
         """
-        return self._host
+        return self._lm_hostname
 
     @property
     def fw_version(self):
@@ -351,17 +370,18 @@ class LMAir(_LMFixture):
         return self._ssid
 
     @staticmethod
-    def discover(wait_duration: int = None, discover_port: int = None) -> List[LMAir]:
+    def discover(wait_duration: int = None, discover_adapter_ip: str = None, discover_port: int = None) -> List[LMAir]:
         """
         Discovers all devices in local network
 
         :param wait_duration: Optional. Duration in seconds of waiting for response
+        :param discover_adapter_ip: Optional. Ip of the desired network adapter
         :param discover_port: Optional. Broadcast port
         :return: List of LMAir instances
         """
         return [
             LMAir(host, info=info) for host, info in _LMConnector.discover(
-                wait_duration=wait_duration, discover_port=discover_port
+                wait_duration=wait_duration, discover_adapter_ip=discover_adapter_ip, discover_port=discover_port
             ).items()
         ]
 
@@ -372,8 +392,15 @@ class LMAir(_LMFixture):
         """
         config = self._load_config()
         zones = [LMZone(zone, self._connector) for zone in config.findall("./zone")]
-        scenes = [LMCommand(zone, self._connector) for zone in config.findall("./lightscenes/scene")]
+        scenes = [LMCommand(self._connector, config=zone) for zone in config.findall("./lightscenes/scene")]
         return zones, scenes
+
+    def send_command(self, command: Optional[str]):
+        """Sends a custom command
+
+        :param command: command to send (e.g. 'typ,it,did,0996,aid,215,acmd,0,seq,6')
+        """
+        LMCommand(self._connector, name="custom_command", param="cmd=" + command).call()
 
     def start_radio_bus_listening(self, callback: Callable[[str], None]) -> None:
         """Start listening for radio bus actuators.
@@ -388,6 +415,11 @@ class LMAir(_LMFixture):
 
     def _load_config(self) -> ET.Element:
         """Loads the config xml from light manager"""
+
+        if self._config:
+            return self._config
+
         config_response = self._connector.send("/config.xml")
 
-        return ET.fromstring(config_response.content.decode())
+        self._config = ET.fromstring(config_response.content.decode())
+        return self._config
