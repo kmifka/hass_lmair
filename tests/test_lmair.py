@@ -29,6 +29,11 @@ class MyTestCase(unittest.TestCase):
         print(f"Found {len(zones)} zones and {len(scenes)} scenes.")
         self.assertTrue(zones, "Could not find any zones!")
         self.assertTrue(scenes, "Could not find any scenes!")
+        z = zones[0]
+        a = z.actuators[22]
+        c = a.commands[0]
+        c.call()
+
 
     def test_radio_bus_receiving(self):
         stop_event = Event()
@@ -36,7 +41,7 @@ class MyTestCase(unittest.TestCase):
         def callback(data):
             print("Received radio bus data: " + data)
             stop_event.set()
-            self._device().stop_radio_bus_listening()
+            #self._device().stop_radio_bus_listening()
 
         self._device().start_radio_bus_listening(callback)
 
@@ -45,7 +50,7 @@ class MyTestCase(unittest.TestCase):
         for _ in range(30):
             if stop_event.is_set():
                 return
-            sleep(1)
+            sleep(1000)
 
         raise self.failureException("Did not receive radio bus signal!")
 

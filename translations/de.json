@@ -1,0 +1,35 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Light Manager Air Einrichtung",
+                "description": "Wählen Sie ein gefundenes Gerät aus oder geben Sie den Host manuell an",
+                "data": {
+                    "host": "Host"
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Verbindung fehlgeschlagen",
+            "invalid_auth": "Ungültige Authentifizierung",
+            "unknown": "Unerwarteter Fehler"
+        },
+        "abort": {
+            "already_configured": "Gerät ist bereits konfiguriert"
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Light Manager Air Einstellungen",
+                "description": "Konfigurieren Sie die Light Manager Air Optionen",
+                "data": {
+                    "enable_radio_bus": "Radio Bus Empfang aktivieren",
+                    "polling_interval": "Funksignal Polling (ms)",
+                    "enable_marker_updates": "Marker Updates aktivieren",
+                    "marker_update_interval": "Marker Update-Intervall (ms)"
+                }
+            }
+        }
+    }
+} 

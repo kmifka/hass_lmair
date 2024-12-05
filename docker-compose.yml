@@ -1,0 +1,12 @@
+version: '3'
+services:
+  homeassistant:
+    image: homeassistant/home-assistant:latest
+    volumes:
+      - ./config:/config
+      - .:/config/custom_components/light_manager_air
+    environment:
+      - TZ=Europe/Berlin
+    ports:
+      - "8123:8123"
+    restart: unless-stopped
