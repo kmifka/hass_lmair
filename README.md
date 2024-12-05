@@ -32,14 +32,14 @@ This integration bridges jb media's Light Manager Air with Home Assistant, unloc
 ### Option 2: Installation via HACS (Home Assistant Community Store)
 
 1. **Ensure HACS is Installed**
-   If you don’t have HACS installed, follow the [HACS installation guide](https://hacs.xyz/docs/setup/download).
+   If you don’t have HACS installed, follow the [HACS installation guide](https://hacs.xyz/docs/use/).
 
 2. **Add the Custom Repository**
    - Open Home Assistant and navigate to **HACS** → **Integrations**.
    - Click the **three dots menu** in the top-right corner and select **Custom repositories**.
    - Add the following repository URL:
      ```
-     https://github.com/your-repository/light-manager-air
+     https://github.com/kmifka/hass_lmair
      ```
    - Select **Integration** as the category.
    - Click **Add**.
@@ -89,10 +89,10 @@ To configure marker mappings, add the following to your `configuration.yaml` fil
 light_manager_air:
   marker_mappings:
     - marker_id: 12
-      entity_id: "switch.garden_lights"
+      entity_id: "light.garden_lights"
     - marker_id: 15
       entity_id: "cover.bedroom_blinds"
     - marker_id: 22
       entity_id: "light.dining_room"
     - marker_id: 30
-      entity_id: "switch.fountain_pump"
+      entity_id: "light.fountain_pump"

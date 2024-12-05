@@ -72,8 +72,6 @@ class _LMConnector:
         :return: Returns a dict with IP addresses as keys and device info as value.
         """
 
-        return {'20.20.20.50': 'WhoAmI:LMAIR          \r\n001ec01ef5a6\r\nFWVersion 11.1\r\nLogin \r\nPass \r\nSSID Mifka intern\r\n'}
-
         wait_duration = wait_duration or 3
         discover_port = discover_port or 30303
 
