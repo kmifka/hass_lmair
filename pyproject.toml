@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "light-manager-air"
-version = "1.2.1"
-description = "SDK for communication with jbmedia light manager air"
+version = "1.0.0"
+description = "Home Assistant custom integration for the Light Manager Air by jb media."
 readme = "README.md"
 authors = [{ name = "Korbinian Mifka", email = "info@korbinian-mifka.com" }]
 license = { file = "LICENSE" }
 classifiers = [
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU GENERAL PUBLIC LICENSE",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
 ]
@@ -22,4 +22,4 @@ requires-python = ">=3.9"
 dev = ["black", "pytest"]
 
 [project.urls]
-Homepage = "https://github.com/kmifka/lmair-sdk-python.git"
+Homepage = "https://github.com/kmifka/hass_lmair"

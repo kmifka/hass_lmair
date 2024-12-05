@@ -1,0 +1,11 @@
+{
+  "name": "Light Manager Air",
+  "render_readme": true,
+  "domain": "light_manager_air",
+  "documentation": "https://github.com/USERNAME/light_manager_air",
+  "issue_tracker": "https://github.com/USERNAME/light_manager_air/issues",
+  "dependencies": [],
+  "after_dependencies": [],
+  "codeowners": ["@USERNAME"],
+  "homeassistant": "2024.1.0"
+} 
