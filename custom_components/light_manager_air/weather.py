@@ -11,10 +11,14 @@ from homeassistant.const import (
     UnitOfPressure,
     UnitOfSpeed,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
+from .const import (
+    DOMAIN,
+    WEATHER_INDOOR_CHANNEL_ID,
+    WEATHER_CHANNEL_NAME_TEMPLATE,
+)
 from .coordinator import LightManagerAirCoordinator
 from .base_entity import LightManagerAirBaseEntity
 
@@ -39,17 +43,26 @@ class LightManagerAirWeather(LightManagerAirBaseEntity, WeatherEntity):
     def __init__(self, coordinator: LightManagerAirCoordinator, channel) -> None:
         """Initialize the weather entity."""
         self.weather_channel = channel
-        
+
         super().__init__(
             coordinator=coordinator,
             command_container=channel,
             unique_id_suffix=f"weather_{channel.channel_id}"
         )
-        
-        self._attr_name = f"Weather Channel {channel.channel_id}"
+
+        self._attr_name = WEATHER_CHANNEL_NAME_TEMPLATE.format(channel.channel_id)
         self._attr_native_temperature_unit = UnitOfTemperature.CELSIUS
         self._attr_native_pressure_unit = UnitOfPressure.HPA
         self._attr_native_wind_speed_unit = UnitOfSpeed.KILOMETERS_PER_HOUR
+
+    async def async_added_to_hass(self) -> None:
+        """When entity is added to hass."""
+        await super().async_added_to_hass()
+
+        if self.weather_channel.channel_id == WEATHER_INDOOR_CHANNEL_ID:
+            self._attr_name = "Innensensor"
+            self._attr_condition = "Raumklima"
+            self.async_write_ha_state()
 
     @property
     def native_temperature(self) -> float | None:

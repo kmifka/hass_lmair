@@ -10,7 +10,17 @@ from homeassistant.const import CONF_HOST, CONF_USERNAME, CONF_PASSWORD
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.selector import selector, SelectSelector, SelectSelectorConfig, SelectSelectorMode
 
-from .const import DOMAIN, DEFAULT_RADIO_POLLING_INTERVAL, CONF_MARKER_UPDATE_INTERVAL, DEFAULT_MARKER_UPDATE_INTERVAL
+from .const import (
+    DOMAIN,
+    DEFAULT_RADIO_POLLING_INTERVAL,
+    DEFAULT_RATE_LIMIT,
+    DEFAULT_RATE_WINDOW,
+    CONF_RATE_LIMIT,
+    CONF_RATE_WINDOW,
+    CONF_ENABLE_RADIO_BUS,
+    CONF_RADIO_POLLING_INTERVAL,
+    CONF_ENABLE_MARKER_UPDATES, CONF_MARKER_UPDATE_INTERVAL, DEFAULT_MARKER_UPDATE_INTERVAL,
+)
 from .lmair import LMAir
 
 _LOGGER = logging.getLogger(__name__)
@@ -51,7 +61,7 @@ class LightManagerAirConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_USERNAME: lm.username, 
                         CONF_PASSWORD: lm.password
                     },
-                    options={"enable_radio_bus": True}
+                    options={CONF_ENABLE_RADIO_BUS: True}
                 )
             except ConnectionError:
                 flow_error={"base": "cannot_connect"}
@@ -96,21 +106,33 @@ class LightManagerAirOptionsFlow(config_entries.OptionsFlow):
             data_schema=vol.Schema(
                 {
                     vol.Required(
-                        "enable_radio_bus",
-                        default=self.config_entry.options.get("enable_radio_bus", True),
+                        CONF_ENABLE_RADIO_BUS,
+                        default=self.config_entry.options.get(CONF_ENABLE_RADIO_BUS, True),
                     ): bool,
                     vol.Required(
-                        "polling_interval",
-                        default=self.config_entry.options.get("polling_interval", DEFAULT_RADIO_POLLING_INTERVAL),
+                        CONF_RADIO_POLLING_INTERVAL,
+                        default=self.config_entry.options.get(CONF_RADIO_POLLING_INTERVAL, DEFAULT_RADIO_POLLING_INTERVAL),
                     ): vol.Coerce(int),
                     vol.Required(
-                        "enable_marker_updates",
-                        default=self.config_entry.options.get("enable_marker_updates", True),
+                        CONF_ENABLE_MARKER_UPDATES,
+                        default=self.config_entry.options.get(CONF_ENABLE_MARKER_UPDATES, True),
                     ): bool,
                     vol.Required(
                         CONF_MARKER_UPDATE_INTERVAL,
                         default=self.config_entry.options.get(CONF_MARKER_UPDATE_INTERVAL, DEFAULT_MARKER_UPDATE_INTERVAL),
                     ): vol.Coerce(int),
+                    vol.Required(
+                        CONF_RATE_LIMIT,
+                        default=self.config_entry.options.get(
+                            CONF_RATE_LIMIT, DEFAULT_RATE_LIMIT
+                        ),
+                    ): int,
+                    vol.Required(
+                        CONF_RATE_WINDOW,
+                        default=self.config_entry.options.get(
+                            CONF_RATE_WINDOW, DEFAULT_RATE_WINDOW
+                        ),
+                    ): float
                 }
             ),
         )

@@ -15,12 +15,7 @@ from .coordinator import LightManagerAirCoordinator
 _LOGGER = logging.getLogger(__name__)
 _LOGGER.setLevel(logging.DEBUG)
 
-if not _LOGGER.handlers:
-    _handler = logging.StreamHandler()
-    _handler.setLevel(logging.DEBUG)
-    _LOGGER.addHandler(_handler)
-
-PLATFORMS = [Platform.LIGHT, Platform.SCENE, Platform.EVENT, Platform.COVER, Platform.SWITCH, Platform.WEATHER]
+PLATFORMS = [Platform.LIGHT, Platform.SCENE, Platform.COVER, Platform.SWITCH, Platform.WEATHER]
 
 CONFIG_SCHEMA = vol.Schema(
     {
@@ -48,7 +43,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Light Manager Air from a config entry."""
 
     hass.data.setdefault(DOMAIN, {})
-    
+
     lm_coordinator = LightManagerAirCoordinator(hass, entry)
     await lm_coordinator.async_setup()
     await lm_coordinator.async_config_entry_first_refresh()

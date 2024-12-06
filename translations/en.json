@@ -1,32 +1,9 @@
 {
-    "config": {
-        "step": {
-            "user": {
-                "title": "Light Manager Air Setup",
-                "description": "Select a discovered device or configure manually",
-                "data": {
-                    "host": "Host"
-                }
-            }
-        },
-        "error": {
-            "cannot_connect": "Failed to connect",
-            "invalid_auth": "Invalid authentication",
-            "unknown": "Unexpected error"
-        },
-        "abort": {
-            "already_configured": "Device is already configured"
-        }
-    },
-    "options": {
-        "step": {
-            "init": {
-                "title": "Light Manager Air Settings",
-                "description": "Configure Light Manager Air options",
-                "data": {
-                    "enable_radio_bus": "Enable Radio Bus Reception",
-                    "polling_interval": "Radio Signal Polling"
-                }
+    "entity": {
+        "weather": {
+            "light_manager_air": {
+                "internal_sensor": "Internal Sensor",
+                "indoor_climate": "Indoor Climate"
             }
         }
     }

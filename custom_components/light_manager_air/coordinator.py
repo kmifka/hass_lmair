@@ -10,7 +10,22 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import DOMAIN, DEFAULT_RADIO_POLLING_INTERVAL, CONF_MARKER_UPDATE_INTERVAL, DEFAULT_MARKER_UPDATE_INTERVAL
+from .const import (
+    DOMAIN,
+    DEFAULT_RADIO_POLLING_INTERVAL,
+    CONF_MARKER_UPDATE_INTERVAL,
+    DEFAULT_MARKER_UPDATE_INTERVAL,
+    DEFAULT_RATE_LIMIT,
+    DEFAULT_RATE_WINDOW,
+    CONF_RATE_LIMIT,
+    CONF_RATE_WINDOW,
+    CONF_ENABLE_RADIO_BUS,
+    CONF_RADIO_POLLING_INTERVAL,
+    CONF_ENABLE_MARKER_UPDATES,
+    Priority,
+    MIN_POLLING_CALLS,
+    POLLING_TIME_WINDOW,
+)
 from .lmair import LMAir
 
 _LOGGER = logging.getLogger(__name__)
@@ -42,12 +57,12 @@ class LightManagerAirCoordinator(DataUpdateCoordinator):
         self._device_info = None
 
         # Start radio bus listening if enabled in options
-        if self.entry.options.get("enable_radio_bus", True):
-            self.start_radio_bus_listening(self.entry.options.get("polling_interval"))
+        if self.entry.options.get(CONF_ENABLE_RADIO_BUS, True):
+            self.start_radio_bus_listening(self.entry.options.get(CONF_RADIO_POLLING_INTERVAL, DEFAULT_RADIO_POLLING_INTERVAL))
 
         # Start marker updates if enabled in options
-        if self.entry.options.get("enable_marker_updates", True):
-            self.start_marker_updates(self.entry.options.get(CONF_MARKER_UPDATE_INTERVAL))
+        if self.entry.options.get(CONF_ENABLE_MARKER_UPDATES, True):
+            self.start_marker_updates(self.entry.options.get(CONF_MARKER_UPDATE_INTERVAL, DEFAULT_MARKER_UPDATE_INTERVAL))
 
     async def async_setup(self):
         """Set up the coordinator."""
@@ -84,11 +99,11 @@ class LightManagerAirCoordinator(DataUpdateCoordinator):
         self.stop_radio_bus_listening()
         self.stop_marker_updates()
 
-        if entry.options.get("enable_radio_bus", True):
-            self.start_radio_bus_listening(entry.options.get("polling_interval"))
+        if entry.options.get(CONF_ENABLE_RADIO_BUS, True):
+            self.start_radio_bus_listening(entry.options.get(CONF_RADIO_POLLING_INTERVAL, DEFAULT_RADIO_POLLING_INTERVAL))
 
-        if entry.options.get("enable_marker_updates", True):
-            self.start_marker_updates(entry.options.get(CONF_MARKER_UPDATE_INTERVAL))
+        if entry.options.get(CONF_ENABLE_MARKER_UPDATES, True):
+            self.start_marker_updates(entry.options.get(CONF_MARKER_UPDATE_INTERVAL, DEFAULT_MARKER_UPDATE_INTERVAL))
 
     @property
     def device_info(self):
@@ -181,7 +196,7 @@ class LightManagerAirCoordinator(DataUpdateCoordinator):
                     self.hass.bus.async_fire(DATA_UPDATE_EVENT, {
                         "device_id": self.device_id
                     })
-                except ConnectionError as e:
+                except ConnectionError:
                     pass
 
         self._marker_update_unsubscribe = async_track_time_interval(

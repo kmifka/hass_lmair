@@ -59,13 +59,15 @@ class LightManagerAirCover(LightManagerAirBaseEntity, CoverEntity):
     def is_closed(self) -> bool | None:
         """Return if the cover is closed."""
         if self._mapped_marker:
-            return not self._mapped_marker.state
+            state = self._mapped_marker.state
+            return state if self._invert_marker else not state
         return None
 
     def is_open(self) -> bool | None:
         """Return if the cover is open."""
         if self._mapped_marker:
-            return self._mapped_marker.state
+            state = self._mapped_marker.state
+            return not state if self._invert_marker else state
         return None
 
     async def async_open_cover(self, **kwargs):

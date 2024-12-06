@@ -6,7 +6,7 @@ from typing import Optional
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 
-from .const import CONF_ENTITY_ID, CONF_MARKER_ID, DOMAIN, CONF_MAPPINGS
+from .const import CONF_ENTITY_ID, CONF_MARKER_ID, DOMAIN, CONF_MAPPINGS, CONF_INVERT, Priority
 from .coordinator import DATA_UPDATE_EVENT
 from .lmair import _LMFixture
 
@@ -31,6 +31,7 @@ class LightManagerAirBaseEntity(ABC):
         self._attr_name = command_container.name
         self._attr_unique_id = f"{self._attr_device_id}_{unique_id_suffix}"
         self._mapped_marker = None
+        self._invert_marker = False
 
         if zone_name:
             # Create device info for zoned entity
@@ -54,6 +55,7 @@ class LightManagerAirBaseEntity(ABC):
         for mapping in self._coordinator.hass.data[DOMAIN][CONF_MAPPINGS]:
             if mapping[CONF_ENTITY_ID] == self.entity_id:
                 marker_id = mapping[CONF_MARKER_ID] - 1
+                self._invert_marker = mapping.get(CONF_INVERT, False)
                 for marker in self._coordinator.markers:
                     if marker.marker_id == marker_id:
                         self._mapped_marker = marker
@@ -64,7 +66,8 @@ class LightManagerAirBaseEntity(ABC):
     def is_on(self) -> bool | None:
         """Return if entity is on."""
         if self._mapped_marker:
-            return self._mapped_marker.state
+            state = self._mapped_marker.state
+            return not state if self._invert_marker else state
         return None
 
     async def async_added_to_hass(self) -> None:
