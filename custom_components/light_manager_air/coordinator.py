@@ -12,6 +12,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .const import DOMAIN, DEFAULT_RADIO_POLLING_INTERVAL, CONF_MARKER_UPDATE_INTERVAL, DEFAULT_MARKER_UPDATE_INTERVAL
 from .lmair import LMAir
+from .rate_limiter import RateLimiter
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,6 +41,24 @@ class LightManagerAirCoordinator(DataUpdateCoordinator):
         self._radio_bus_unsubscribe = None
         self._marker_update_unsubscribe = None
         self._device_info = None
+
+        # Get rate limiter configuration from options
+        rate_limit = self.entry.options.get(CONF_RATE_LIMIT, DEFAULT_RATE_LIMIT)
+        rate_window = self.entry.options.get(CONF_RATE_WINDOW, DEFAULT_RATE_WINDOW)
+        
+        priority_config = {
+            Priority.POLLING: {
+                'min_calls': MIN_POLLING_CALLS,
+                'time_window': POLLING_TIME_WINDOW,
+                'latest_only': True
+            }
+        }
+        
+        self.rate_limiter = RateLimiter[Priority](
+            rate_limit=rate_limit,
+            time_window=rate_window,
+            priority_config=priority_config
+        )
 
         # Start radio bus listening if enabled in options
         if self.entry.options.get("enable_radio_bus", True):
@@ -98,14 +117,17 @@ class LightManagerAirCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self):
         """Fetch data from Light Manager Air."""
         try:
+            await self.rate_limiter.acquire(Priority.POLLING)
             self.zones, self.scenes = await self.hass.async_add_executor_job(
                 self.light_manager.load_fixtures
             )
             # Update marker states
+            await self.rate_limiter.acquire(Priority.POLLING)
             self.markers = await self.hass.async_add_executor_job(
                 self.light_manager.load_markers
             )
             # Update weather data
+            await self.rate_limiter.acquire(Priority.POLLING)
             weather_channels = await self.hass.async_add_executor_job(
                 self.light_manager.load_weather_channels
             )
@@ -137,6 +159,7 @@ class LightManagerAirCoordinator(DataUpdateCoordinator):
             """Fetch and process radio signals."""
             if self.light_manager:
                 try:
+                    await self.rate_limiter.acquire(Priority.POLLING)
                     signals = await self.hass.async_add_executor_job(
                         self.light_manager.receive_radio_signals, polling_interval
                     )
@@ -175,6 +198,7 @@ class LightManagerAirCoordinator(DataUpdateCoordinator):
             """Update marker states."""
             if self.light_manager:
                 try:
+                    await self.rate_limiter.acquire(Priority.POLLING)
                     self.markers = await self.hass.async_add_executor_job(
                         self.light_manager.load_markers
                     )

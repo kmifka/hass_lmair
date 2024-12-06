@@ -92,7 +92,7 @@ class LightManagerAirBaseEntity(ABC):
         """Call a command by its name or index."""
         if command_index is not None:
             try:
-                await hass.async_add_executor_job(
+                await self.execute_limited_command(
                     self._command_container.commands[command_index].call
                 )
             except (IndexError, ConnectionError) as e:
@@ -103,10 +103,15 @@ class LightManagerAirBaseEntity(ABC):
             for cmd in self._command_container.commands:
                 if command_name in cmd.name.lower():
                     try:
-                        await hass.async_add_executor_job(cmd.call)
+                        await self.execute_limited_command(cmd.call)
                         break
                     except ConnectionError as e:
                         raise HomeAssistantError(e)
+
+    async def execute_limited_command(self, command_func) -> None:
+        """Execute a command with rate limiting."""
+        await self._coordinator.rate_limiter.acquire(Priority.EVENT)
+        await self.hass.async_add_executor_job(command_func)
 
 
 class ToggleCommandMixin:
