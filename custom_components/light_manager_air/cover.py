@@ -67,7 +67,6 @@ class LightManagerAirCover(LightManagerAirBaseEntity, ToggleCommandMixin, CoverE
             for conversion in hass.data[DOMAIN][CONF_ENTITY_CONVERSIONS]:
                 if (conversion[CONF_ZONE_NAME] == zone_name and 
                     conversion[CONF_ACTUATOR_NAME] == actuator.name):
-                    _LOGGER.debug("FOUND_COVER")
                     return conversion[CONF_TARGET_TYPE] == "cover"
 
         # Default logic for native covers

@@ -120,19 +120,7 @@ class LightManagerAirOptionsFlow(config_entries.OptionsFlow):
                     vol.Required(
                         CONF_MARKER_UPDATE_INTERVAL,
                         default=self.config_entry.options.get(CONF_MARKER_UPDATE_INTERVAL, DEFAULT_MARKER_UPDATE_INTERVAL),
-                    ): vol.Coerce(int),
-                    vol.Required(
-                        CONF_RATE_LIMIT,
-                        default=self.config_entry.options.get(
-                            CONF_RATE_LIMIT, DEFAULT_RATE_LIMIT
-                        ),
-                    ): int,
-                    vol.Required(
-                        CONF_RATE_WINDOW,
-                        default=self.config_entry.options.get(
-                            CONF_RATE_WINDOW, DEFAULT_RATE_WINDOW
-                        ),
-                    ): float
+                    ): vol.Coerce(int)
                 }
             ),
         )

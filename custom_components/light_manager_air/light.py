@@ -42,13 +42,10 @@ class LightManagerAirLight(LightManagerAirBaseEntity, ToggleCommandMixin, LightE
     def check_actuator(actuator, zone_name, hass):
         """Check if actuator should be handled as a light."""
         # First check if there's a conversion configured
-        _LOGGER.debug("Checking conversion for zone: %s, actuator: %s", zone_name, actuator.name)
         if CONF_ENTITY_CONVERSIONS in hass.data[DOMAIN]:
-            _LOGGER.debug(hass.data[DOMAIN][CONF_ENTITY_CONVERSIONS])
             for conversion in hass.data[DOMAIN][CONF_ENTITY_CONVERSIONS]:
                 if (conversion[CONF_ZONE_NAME] == zone_name and 
                     conversion[CONF_ACTUATOR_NAME] == actuator.name):
-                    _LOGGER.debug("Found conversion for %s/%s", zone_name, actuator.name)
                     return conversion[CONF_TARGET_TYPE] == "light"
 
         # Default logic
