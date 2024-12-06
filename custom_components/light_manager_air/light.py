@@ -1,4 +1,6 @@
 """Light platform for Light Manager Air."""
+import logging
+import re
 
 from homeassistant.components.light import (
     LightEntity,
@@ -11,12 +13,11 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .base_entity import LightManagerAirBaseEntity, ToggleCommandMixin
-from .const import DOMAIN
+from .const import DOMAIN, CONF_ENTITY_CONVERSIONS, CONF_TARGET_TYPE, CONF_ZONE_NAME, CONF_ACTUATOR_NAME
 from .coordinator import LightManagerAirCoordinator
 from .cover import LightManagerAirCover
 
-import re
-
+_LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -29,7 +30,7 @@ async def async_setup_entry(
     entities = []
     for zone in coordinator.zones:
         for actuator in zone.actuators:
-            if LightManagerAirLight.check_actuator(actuator):
+            if LightManagerAirLight.check_actuator(actuator, zone.name, hass):
                 entities.append(LightManagerAirLight(coordinator, zone, actuator))
 
     async_add_entities(entities)
@@ -38,9 +39,20 @@ class LightManagerAirLight(LightManagerAirBaseEntity, ToggleCommandMixin, LightE
     """Representation of a Light Manager Air light."""
 
     @staticmethod
-    def check_actuator(actuator):
+    def check_actuator(actuator, zone_name, hass):
         """Check if actuator should be handled as a light."""
-        if LightManagerAirCover.check_actuator(actuator):
+        # First check if there's a conversion configured
+        _LOGGER.debug("Checking conversion for zone: %s, actuator: %s", zone_name, actuator.name)
+        if CONF_ENTITY_CONVERSIONS in hass.data[DOMAIN]:
+            _LOGGER.debug(hass.data[DOMAIN][CONF_ENTITY_CONVERSIONS])
+            for conversion in hass.data[DOMAIN][CONF_ENTITY_CONVERSIONS]:
+                if (conversion[CONF_ZONE_NAME] == zone_name and 
+                    conversion[CONF_ACTUATOR_NAME] == actuator.name):
+                    _LOGGER.debug("Found conversion for %s/%s", zone_name, actuator.name)
+                    return conversion[CONF_TARGET_TYPE] == "light"
+
+        # Default logic
+        if LightManagerAirCover.check_actuator(actuator, zone_name, hass):
             return False
 
         # check for Philips Hue

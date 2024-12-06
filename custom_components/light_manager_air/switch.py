@@ -6,7 +6,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .base_entity import LightManagerAirBaseEntity, ToggleCommandMixin
-from .const import DOMAIN
+from .const import DOMAIN, CONF_ENTITY_CONVERSIONS, CONF_TARGET_TYPE, CONF_ZONE_NAME, CONF_ACTUATOR_NAME
 from .coordinator import LightManagerAirCoordinator
 from .lmair import LMMarker
 
@@ -26,6 +26,12 @@ async def async_setup_entry(
         for marker in coordinator.markers:
             entities.append(LightManagerAirMarkerSwitch(coordinator, marker))
 
+    # Add converted switches
+    for zone in coordinator.zones:
+        for actuator in zone.actuators:
+            if LightManagerAirSwitch.check_actuator(actuator, zone.name, hass):
+                entities.append(LightManagerAirSwitch(coordinator, zone, actuator))
+
     async_add_entities(entities)
 
 
@@ -44,3 +50,30 @@ class LightManagerAirMarkerSwitch(LightManagerAirBaseEntity, ToggleCommandMixin,
     def is_on(self) -> bool:
         """Return true if the marker is on."""
         return self._command_container.state
+
+
+class LightManagerAirSwitch(LightManagerAirBaseEntity, ToggleCommandMixin, SwitchEntity):
+    """Representation of a Light Manager Air Switch."""
+
+    def __init__(self, coordinator, zone, actuator):
+        """Initialize the switch."""
+        unique_id = f"{zone.name}_{actuator.name}"
+        super().__init__(
+            coordinator=coordinator,
+            command_container=actuator,
+            unique_id_suffix=unique_id,
+            zone_name=zone.name
+        )
+        self._actuator = actuator
+
+    @staticmethod
+    def check_actuator(actuator, zone_name, hass):
+        """Check if actuator should be handled as a switch."""
+        # First check if there's a conversion configured
+        if CONF_ENTITY_CONVERSIONS in hass.data[DOMAIN]:
+            for conversion in hass.data[DOMAIN][CONF_ENTITY_CONVERSIONS]:
+                if (conversion[CONF_ZONE_NAME] == zone_name and 
+                    conversion[CONF_ACTUATOR_NAME] == actuator.name):
+                    return conversion[CONF_TARGET_TYPE] == "switch"
+
+        return False

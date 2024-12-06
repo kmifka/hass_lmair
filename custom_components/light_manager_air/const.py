@@ -29,6 +29,21 @@ DEFAULT_RATE_WINDOW = 3
 CONF_RATE_LIMIT = "rate_limit"
 CONF_RATE_WINDOW = "rate_window"
 
+# Entity type conversion constants
+CONF_ENTITY_CONVERSIONS = "entity_conversions"
+CONF_ZONE_NAME = "zone_name"
+CONF_ACTUATOR_NAME = "actuator_name"
+CONF_TARGET_TYPE = "target_type"
+
+VALID_TARGET_TYPES = ["light", "switch", "cover"]
+
+# Schema für Entity Konversion
+CONVERSION_SCHEMA = vol.Schema({
+    vol.Required(CONF_ZONE_NAME): str,
+    vol.Required(CONF_ACTUATOR_NAME): str,
+    vol.Required(CONF_TARGET_TYPE): vol.In(VALID_TARGET_TYPES),
+})
+
 # Config flow constants
 CONF_ENABLE_RADIO_BUS = "enable_radio_bus"
 CONF_RADIO_POLLING_INTERVAL = "polling_interval"
