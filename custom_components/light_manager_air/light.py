@@ -29,6 +29,10 @@ async def async_setup_entry(
 
     entities = []
     for zone in coordinator.zones:
+        # Skip ignored zones
+        if LightManagerAirBaseEntity.is_zone_ignored(zone.name, hass):
+            continue
+            
         for actuator in zone.actuators:
             if LightManagerAirLight.check_actuator(actuator, zone.name, hass):
                 entities.append(LightManagerAirLight(coordinator, zone, actuator))
@@ -54,9 +58,9 @@ class LightManagerAirLight(LightManagerAirBaseEntity, ToggleCommandMixin, LightE
 
         # check for Philips Hue
         if actuator.commands and len(actuator.commands) > 0:
-            first_cmd = actuator.commands[0].param
+            first_cmd = actuator.commands[0].cmd
             light_pattern = r'/api/[^/]+/(?:lights|groups)/\d+/(?:state|action)'
-            if re.search(light_pattern, first_cmd):
+            if re.search(light_pattern, first_cmd[0][1]):
                 return True
 
         return actuator.type != "ipcam"

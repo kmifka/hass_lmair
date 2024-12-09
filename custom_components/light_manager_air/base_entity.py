@@ -6,7 +6,7 @@ from typing import Optional
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 
-from .const import CONF_ENTITY_ID, CONF_MARKER_ID, DOMAIN, CONF_MAPPINGS, CONF_INVERT, Priority
+from .const import CONF_ENTITY_ID, CONF_MARKER_ID, DOMAIN, CONF_MAPPINGS, CONF_INVERT, Priority, CONF_IGNORED_ZONES
 from .coordinator import DATA_UPDATE_EVENT
 from .lmair import _LMFixture
 
@@ -15,6 +15,15 @@ _LOGGER = logging.getLogger(__name__)
 
 class LightManagerAirBaseEntity(ABC):
     """Base class for Light Manager Air entities."""
+
+    @staticmethod
+    def is_zone_ignored(zone_name: str, hass: HomeAssistant) -> bool:
+        """Check if zone should be ignored based on configuration."""
+        if DOMAIN not in hass.data:
+            return False
+            
+        ignored_zones = hass.data[DOMAIN].get(CONF_IGNORED_ZONES, [])
+        return zone_name in ignored_zones
 
     def __init__(self, coordinator, unique_id_suffix: str, command_container: _LMFixture, zone_name: Optional[str] = None):
         """Initialize the base entity.

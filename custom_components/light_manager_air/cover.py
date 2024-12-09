@@ -23,6 +23,10 @@ async def async_setup_entry(
 
     entities = []
     for zone in coordinator.zones:
+        # Skip ignored zones
+        if LightManagerAirBaseEntity.is_zone_ignored(zone.name, hass):
+            continue
+            
         for actuator in zone.actuators:
             if LightManagerAirCover.check_actuator(actuator, zone.name, hass):
                 entities.append(LightManagerAirCover(coordinator, zone, actuator))

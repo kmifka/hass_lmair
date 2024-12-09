@@ -2,6 +2,7 @@
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -28,6 +29,10 @@ async def async_setup_entry(
 
     # Add converted switches
     for zone in coordinator.zones:
+        # Skip ignored zones
+        if LightManagerAirBaseEntity.is_zone_ignored(zone.name, hass):
+            continue
+            
         for actuator in zone.actuators:
             if LightManagerAirSwitch.check_actuator(actuator, zone.name, hass):
                 entities.append(LightManagerAirSwitch(coordinator, zone, actuator))
@@ -45,6 +50,7 @@ class LightManagerAirMarkerSwitch(LightManagerAirBaseEntity, ToggleCommandMixin,
             command_container=marker,
             unique_id_suffix=f"marker_{marker.marker_id}"
         )
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def is_on(self) -> bool:

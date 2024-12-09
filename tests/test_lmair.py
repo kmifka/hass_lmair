@@ -2,7 +2,7 @@ import unittest
 from threading import Event
 from time import sleep
 
-from lmair import LMAir
+from custom_components.light_manager_air.lmair import LMAir
 
 
 class MyTestCase(unittest.TestCase):
@@ -30,7 +30,7 @@ class MyTestCase(unittest.TestCase):
         self.assertTrue(zones, "Could not find any zones!")
         self.assertTrue(scenes, "Could not find any scenes!")
         z = zones[0]
-        a = z.actuators[22]
+        a = z.actuators[8]
         c = a.commands[0]
         c.call()
 

@@ -7,7 +7,7 @@ import socket
 import xml.etree.ElementTree as ET
 from time import time
 from typing import List, Optional
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qsl
 
 import requests
 from requests import Response
@@ -18,7 +18,7 @@ _LOGGER = logging.getLogger(__name__)
 class _LMConnector:
     """Handles the connection to the Light Manager, including discovery and code polling."""
     DEFAULT_TIMEOUT = 1000
-    CONNECT_CMD = "/control?pcip="
+    COMMAND_KEY = "cmd"
     RECEIVE_IDENTIFIERS = ["rfhm,", "rfit,"]  # List of valid identifiers
     DISCOVER_MESSAGE = "D"
     POLL_ENDPOINT = "/poll.htm"
@@ -109,15 +109,14 @@ class _LMConnector:
                 pass
             sock.close()
 
-    def send(self, path: str, cmd: str = None, value: str = None, retry: bool = False, check_response: bool = True, timeout: int = None) -> Response:
+    def send(self, path: str, cmd: [str, str] = None, retry: bool = False, check_response: bool = True, timeout: int = None) -> Response:
         """Sends a command to the Light Manager.
 
         :param retry: if true it tries to retry the command once
         :param timeout: timeout in ms
         :param check_response: If true, the response is checked.
         :param path: Destination path.
-        :param cmd: Command key.
-        :param value: Command value.
+        :param cmd: Command list of tuple.
         :return: Returns the response.
         """
 
@@ -128,13 +127,13 @@ class _LMConnector:
         timeout = 3 or (timeout or _LMConnector.DEFAULT_TIMEOUT) / 1000
 
         try:
-            if not cmd or not value:
+            if not cmd:
                 response = requests.get(self._lm_url + path, auth=auth, timeout=timeout)
             else:
-                response = requests.post(self._lm_url + path, {cmd: value}, auth=auth, timeout=timeout)
+                response = requests.post(self._lm_url + path, data=cmd, auth=auth, timeout=timeout)
         except Exception as e:
             if retry:
-                return self.send(path, cmd, value, False, check_response, timeout)
+                return self.send(path, cmd, False, check_response, timeout)
             raise ConnectionError("No answer from light manager air") from e
 
         if response.status_code == 401:
@@ -242,17 +241,18 @@ class LMCommand(_LMFixture):
 
     def __init__(self, connector: _LMConnector,
                  name: Optional[str] = None,
-                 param: Optional[str] = None,
+                 cmd: Optional[[(str, str)] | str] = None,
                  config: Optional[ET.Element] = None):
         """
         :param connector: Light Manager connector.
         :param name: Name of the command.
-        :param param: Param of the command (e.g., 'cmd=typ,it,did,0996,aid,215,acmd,0,seq,6').
+        :param cmd: Command of the command as tuple or string (e.g., [("cmd", "typ,it,did,0996,aid,215,acmd,0,seq,6")]).
         :param config: Command part of the config.xml (Optional. Only if name and param are None).
         """
         super().__init__(name or config.findtext("./name"))
         self._connector = connector
-        self._param = param or config.findtext("./param")
+        self._cmd = cmd or _LMConnector.COMMAND_KEY + "=" + config.findtext("./param")
+        self._cmd = parse_qsl(self._cmd) if isinstance(self._cmd, str) else self._cmd
 
     @property
     def name(self) -> str:
@@ -262,17 +262,17 @@ class LMCommand(_LMFixture):
         return self._name
 
     @property
-    def param(self) -> str:
+    def cmd(self) -> [str, str]:
         """
         :return: Param data of the command.
         """
-        return self._param
+        return self._cmd
 
     def call(self) -> None:
         """
         Starts the command on the Light Manager.
         """
-        self._connector.send("?" + self.param, retry=True)
+        self._connector.send("/control", cmd=self.cmd, retry=True)
 
 
 class LMActuator(_LMCommandContainer):
@@ -306,9 +306,9 @@ class LMMarker(_LMCommandContainer):
         super().__init__(f"Marker {marker_id + 1}", connector)
         self._marker_id = marker_id
         self._commands = [
-            LMCommand(connector, "on", f"cmd=typ,smk,{marker_id},1"),
-            LMCommand(connector, "off", f"cmd=typ,smk,{marker_id},0"),
-            LMCommand(connector, "toggle", f"cmd=typ,smk,{marker_id},2")
+            LMCommand(connector, "on", f"typ,smk,{marker_id},1"),
+            LMCommand(connector, "off", f"typ,smk,{marker_id},0"),
+            LMCommand(connector, "toggle", f"typ,smk,{marker_id},2")
         ]
 
     @property
@@ -581,4 +581,4 @@ class LMAir(_LMFixture):
 
         :param command: Command to send (e.g., 'typ,it,did,0996,aid,215,acmd,0,seq,6').
         """
-        LMCommand(self._connector, name="custom_command", param="cmd=" + command).call()
+        LMCommand(self._connector, name="custom_command", cmd=[(_LMConnector.COMMAND_KEY, command)]).call()

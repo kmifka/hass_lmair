@@ -11,6 +11,7 @@ CONF_MARKER_ID = "marker_id"
 CONF_ENTITY_ID = "entity_id"
 CONF_HIDE_MARKER = "hide_marker"
 CONF_INVERT = "invert"
+CONF_IGNORED_ZONES = "ignored_zones"
 
 DEFAULT_NAME = "Light Manager Air"
 
