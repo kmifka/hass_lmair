@@ -11,6 +11,7 @@ from homeassistant.helpers import config_validation as cv
 
 from .const import DOMAIN, MAPPING_SCHEMA, CONF_MAPPINGS, CONF_ENTITY_CONVERSIONS, CONVERSION_SCHEMA, CONF_IGNORED_ZONES
 from .coordinator import LightManagerAirCoordinator
+from .discovery import async_start_discovery
 
 _LOGGER = logging.getLogger(__name__)
 _LOGGER.setLevel(logging.DEBUG)
@@ -45,6 +46,9 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
         hass.data[DOMAIN][CONF_ENTITY_CONVERSIONS] = config[DOMAIN][CONF_ENTITY_CONVERSIONS]
     if CONF_IGNORED_ZONES in config[DOMAIN]:
         hass.data[DOMAIN][CONF_IGNORED_ZONES] = config[DOMAIN][CONF_IGNORED_ZONES]
+
+    # Discovery Service starten
+    await async_start_discovery(hass)
 
     return True
 

@@ -7,6 +7,10 @@
                 "data": {
                     "host": "Host"
                 }
+            },
+            "confirm": {
+                "title": "Light Manager Air bestätigen",
+                "description": "Möchten Sie {host} hinzufügen?"
             }
         },
         "error": {
@@ -15,7 +19,8 @@
             "unknown": "Unerwarteter Fehler"
         },
         "abort": {
-            "already_configured": "Gerät ist bereits konfiguriert"
+            "already_configured": "Gerät ist bereits konfiguriert",
+            "device_not_found": "Gerät konnte nicht gefunden werden"
         }
     },
     "options": {

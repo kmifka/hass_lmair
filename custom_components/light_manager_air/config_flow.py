@@ -9,6 +9,7 @@ from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_USERNAME, CONF_PASSWORD
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.selector import selector, SelectSelector, SelectSelectorConfig, SelectSelectorMode
+from homeassistant.components import zeroconf
 
 from .const import (
     DOMAIN,
@@ -36,13 +37,56 @@ class LightManagerAirConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 2
 
+    def __init__(self):
+        """Initialize the config flow."""
+        self._discovered_device = None
+
+    async def async_step_discovery(self, discovery_info: dict) -> FlowResult:
+        """Handle discovery."""
+        host = discovery_info["host"]
+        
+        # Check if already configured
+        await self.async_set_unique_id(discovery_info["mac_address"])
+        self._abort_if_unique_id_configured(
+            updates={CONF_HOST: host}
+        )
+
+        self._discovered_device = {
+            CONF_HOST: host
+        }
+
+        self.context["title_placeholders"] = {
+            "name": f"Light Manager Air ({host})"
+        }
+
+        return await self.async_step_confirm()
+
+    async def async_step_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle confirmation of discovered device."""
+        if user_input is not None:
+            return self.async_create_entry(
+                title=self.context["title_placeholders"]["name"],
+                data=self._discovered_device,
+                options={CONF_ENABLE_RADIO_BUS: True}
+            )
+
+        return self.async_show_form(
+            step_id="confirm",
+            description_placeholders={
+                "host": self._discovered_device[CONF_HOST]
+            }
+        )
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-
+        """Handle the initial step."""
         flow_error = None
         options = []
 
+        # Verwende die bestehende discover() Funktion
         discovered_devices = await self.hass.async_add_executor_job(LMAir.discover)
 
         if discovered_devices:
@@ -70,7 +114,6 @@ class LightManagerAirConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
             except ConnectionError:
                 flow_error={"base": "cannot_connect"}
-
 
         return self.async_show_form(
             step_id="user",
