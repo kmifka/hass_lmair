@@ -342,6 +342,7 @@ class LMWeatherChannel(_LMFixture):
         self._wind_direction = data.get("direction")
         self._rain = data.get("rain")
         self._weather_id = data.get("weather id")
+        self._weather_id = int(self._weather_id) if self._weather_id else None
 
     @property
     def channel_id(self) -> int:
@@ -374,7 +375,7 @@ class LMWeatherChannel(_LMFixture):
         return float(self._rain) if self._rain else None
 
     @property
-    def weather_id(self) -> Optional[str]:
+    def weather_id(self) -> Optional[int]:
         """Return the weather ID."""
         return self._weather_id
 
@@ -514,7 +515,7 @@ class LMAir(_LMFixture):
             adapter_ip=discover_adapter_ip
         ) for host, info in devices.items()]
 
-    def receive_radio_signals(self, timeout: int = None) -> list[dict[str, str]]:
+    def load_radio_signals(self, timeout: int = None) -> list[dict[str, str]]:
         """Polls the /poll.htm endpoint once and returns any radio codes found.
 
         :return: List of received radio codes

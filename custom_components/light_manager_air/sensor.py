@@ -13,7 +13,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .base_entity import LightManagerAirBaseEntity
-from .const import DOMAIN, WEATHER_INDOOR_CHANNEL_ID
+from .const import DOMAIN, WEATHER_CHANNEL_NAME_TEMPLATE
 from .coordinator import LightManagerAirCoordinator
 
 async def async_setup_entry(
@@ -33,11 +33,11 @@ async def async_setup_entry(
             continue
             
         # Add temperature sensor
-        if channel.temperature is not "":
+        if channel.temperature != "":
             entities.append(LightManagerAirTemperatureSensor(coordinator, channel))
             
         # Add humidity sensor if value > 0
-        if channel.humidity is not "" and channel.humidity > 0:
+        if channel.humidity != "" and channel.humidity > 0:
             entities.append(LightManagerAirHumiditySensor(coordinator, channel))
 
     async_add_entities(entities)
@@ -53,7 +53,7 @@ class LightManagerAirTemperatureSensor(LightManagerAirBaseEntity, SensorEntity):
         """Initialize the sensor."""
         self.weather_channel = channel
         
-        name_suffix = "Innentemperatur" if channel.channel_id == WEATHER_INDOOR_CHANNEL_ID else f"Temperatur Kanal {channel.channel_id}"
+        name_suffix = WEATHER_CHANNEL_NAME_TEMPLATE.format(channel.channel_id)
         
         super().__init__(
             coordinator=coordinator,
@@ -79,7 +79,7 @@ class LightManagerAirHumiditySensor(LightManagerAirBaseEntity, SensorEntity):
         """Initialize the sensor."""
         self.weather_channel = channel
         
-        name_suffix = "Innenluftfeuchtigkeit" if channel.channel_id == WEATHER_INDOOR_CHANNEL_ID else f"Luftfeuchtigkeit Kanal {channel.channel_id}"
+        name_suffix = WEATHER_CHANNEL_NAME_TEMPLATE.format(channel.channel_id)
         
         super().__init__(
             coordinator=coordinator,

@@ -19,7 +19,12 @@ from .const import (
     CONF_RATE_WINDOW,
     CONF_ENABLE_RADIO_BUS,
     CONF_RADIO_POLLING_INTERVAL,
-    CONF_ENABLE_MARKER_UPDATES, CONF_MARKER_UPDATE_INTERVAL, DEFAULT_MARKER_UPDATE_INTERVAL,
+    CONF_ENABLE_MARKER_UPDATES,
+    CONF_MARKER_UPDATE_INTERVAL,
+    DEFAULT_MARKER_UPDATE_INTERVAL,
+    CONF_ENABLE_WEATHER_UPDATES,
+    CONF_WEATHER_UPDATE_INTERVAL,
+    DEFAULT_WEATHER_UPDATE_INTERVAL,
 )
 from .lmair import LMAir
 
@@ -120,6 +125,14 @@ class LightManagerAirOptionsFlow(config_entries.OptionsFlow):
                     vol.Required(
                         CONF_MARKER_UPDATE_INTERVAL,
                         default=self.config_entry.options.get(CONF_MARKER_UPDATE_INTERVAL, DEFAULT_MARKER_UPDATE_INTERVAL),
+                    ): vol.Coerce(int),
+                    vol.Required(
+                        CONF_ENABLE_WEATHER_UPDATES,
+                        default=self.config_entry.options.get(CONF_ENABLE_WEATHER_UPDATES, True),
+                    ): bool,
+                    vol.Required(
+                        CONF_WEATHER_UPDATE_INTERVAL,
+                        default=self.config_entry.options.get(CONF_WEATHER_UPDATE_INTERVAL, DEFAULT_WEATHER_UPDATE_INTERVAL),
                     ): vol.Coerce(int)
                 }
             ),

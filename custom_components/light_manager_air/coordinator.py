@@ -15,16 +15,12 @@ from .const import (
     DEFAULT_RADIO_POLLING_INTERVAL,
     CONF_MARKER_UPDATE_INTERVAL,
     DEFAULT_MARKER_UPDATE_INTERVAL,
-    DEFAULT_RATE_LIMIT,
-    DEFAULT_RATE_WINDOW,
-    CONF_RATE_LIMIT,
-    CONF_RATE_WINDOW,
     CONF_ENABLE_RADIO_BUS,
     CONF_RADIO_POLLING_INTERVAL,
     CONF_ENABLE_MARKER_UPDATES,
-    Priority,
-    MIN_POLLING_CALLS,
-    POLLING_TIME_WINDOW,
+    CONF_ENABLE_WEATHER_UPDATES,
+    CONF_WEATHER_UPDATE_INTERVAL,
+    DEFAULT_WEATHER_UPDATE_INTERVAL,
 )
 from .lmair import LMAir
 
@@ -33,6 +29,65 @@ _LOGGER = logging.getLogger(__name__)
 
 RADIO_BUS_SIGNAL_EVENT = f"{DOMAIN}_radio_bus_signal"
 DATA_UPDATE_EVENT = f"{DOMAIN}_data_update"
+
+
+class UpdateHandler:
+    """Handles periodic updates for a specific feature."""
+
+    def __init__(self, hass, coordinator, update_type, default_interval):
+        """Initialize the update handler."""
+        self._hass = hass
+        self._coordinator = coordinator
+        self._update_type = update_type
+        self._default_interval = default_interval
+        self._unsubscribe = None
+
+    async def _handle_update(self, _now=None):
+        """Handle the update."""
+        if self._coordinator.light_manager:
+            try:
+                # Dynamically call the corresponding method
+                update_method = getattr(self._coordinator.light_manager, f"load_{self._update_type}")
+                result = await self._hass.async_add_executor_job(update_method)
+                
+                # Save result in Coordinator
+                setattr(self._coordinator, self._update_type, result)
+                
+                self._hass.bus.async_fire(DATA_UPDATE_EVENT, {
+                    "device_id": self._coordinator.device_id
+                })
+                
+                # Special handling for Radio Bus signals
+                if self._update_type == "radio_signals":
+                    for signal in result:
+                        self._hass.bus.async_fire(RADIO_BUS_SIGNAL_EVENT, {
+                            "device_id": self._coordinator.device_id,
+                            "signal_type": signal.get("signal_type"),
+                            "signal_code": signal.get("signal_code")
+                        })
+            except ConnectionError:
+                pass
+
+    def start(self, update_interval=None):
+        """Start periodic updates."""
+        if self._unsubscribe:
+            return
+
+        update_interval = update_interval or self._default_interval
+
+        self._unsubscribe = async_track_time_interval(
+            self._hass,
+            self._handle_update,
+            timedelta(milliseconds=update_interval)
+        )
+
+        self._hass.async_create_task(self._handle_update())
+
+    def stop(self):
+        """Stop periodic updates."""
+        if self._unsubscribe:
+            self._unsubscribe()
+            self._unsubscribe = None
 
 
 class LightManagerAirCoordinator(DataUpdateCoordinator):
@@ -52,17 +107,40 @@ class LightManagerAirCoordinator(DataUpdateCoordinator):
         self.zones = None
         self.scenes = None
         self.markers = None
-        self._radio_bus_unsubscribe = None
-        self._marker_update_unsubscribe = None
+        self.weather_channels = None
         self._device_info = None
 
-        # Start radio bus listening if enabled in options
-        if self.entry.options.get(CONF_ENABLE_RADIO_BUS, True):
-            self.start_radio_bus_listening(self.entry.options.get(CONF_RADIO_POLLING_INTERVAL, DEFAULT_RADIO_POLLING_INTERVAL))
+        self._update_handlers = {
+            "radio": UpdateHandler(hass, self, "radio_signals", DEFAULT_RADIO_POLLING_INTERVAL),
+            "markers": UpdateHandler(hass, self, "markers", DEFAULT_MARKER_UPDATE_INTERVAL),
+            "weather": UpdateHandler(hass, self, "weather_channels", DEFAULT_WEATHER_UPDATE_INTERVAL)
+        }
 
-        # Start marker updates if enabled in options
+        self._start_enabled_update_handler()
+
+    def _start_enabled_update_handler(self):
+        """Start all enabled features."""
+        if self.entry.options.get(CONF_ENABLE_RADIO_BUS, True):
+            self._update_handlers["radio"].start(
+                self.entry.options.get(CONF_RADIO_POLLING_INTERVAL)
+            )
+
         if self.entry.options.get(CONF_ENABLE_MARKER_UPDATES, True):
-            self.start_marker_updates(self.entry.options.get(CONF_MARKER_UPDATE_INTERVAL, DEFAULT_MARKER_UPDATE_INTERVAL))
+            self._update_handlers["markers"].start(
+                self.entry.options.get(CONF_MARKER_UPDATE_INTERVAL)
+            )
+
+        if self.entry.options.get(CONF_ENABLE_WEATHER_UPDATES, True):
+            self._update_handlers["weather"].start(
+                self.entry.options.get(CONF_WEATHER_UPDATE_INTERVAL)
+            )
+
+    async def _handle_options_update(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
+        """Handle options update."""
+        for handler in self._update_handlers.values():
+            handler.stop()
+
+        self._start_enabled_update_handler()
 
     async def async_setup(self):
         """Set up the coordinator."""
@@ -93,17 +171,6 @@ class LightManagerAirCoordinator(DataUpdateCoordinator):
         self.entry.async_on_unload(
             self.entry.add_update_listener(self._handle_options_update)
         )
-
-    async def _handle_options_update(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
-        """Handle options update."""
-        self.stop_radio_bus_listening()
-        self.stop_marker_updates()
-
-        if entry.options.get(CONF_ENABLE_RADIO_BUS, True):
-            self.start_radio_bus_listening(entry.options.get(CONF_RADIO_POLLING_INTERVAL, DEFAULT_RADIO_POLLING_INTERVAL))
-
-        if entry.options.get(CONF_ENABLE_MARKER_UPDATES, True):
-            self.start_marker_updates(entry.options.get(CONF_MARKER_UPDATE_INTERVAL, DEFAULT_MARKER_UPDATE_INTERVAL))
 
     @property
     def device_info(self):
@@ -140,75 +207,3 @@ class LightManagerAirCoordinator(DataUpdateCoordinator):
             
         except ConnectionError as e:
             raise UpdateFailed(e)
-
-    def start_radio_bus_listening(self, polling_interval=None):
-        """Start listening for radio bus signals."""
-        if self._radio_bus_unsubscribe:
-            return
-
-        polling_interval = polling_interval or DEFAULT_RADIO_POLLING_INTERVAL
-
-        async def _handle_radio_codes(_now=None):
-            """Fetch and process radio signals."""
-            if self.light_manager:
-                try:
-                    signals = await self.hass.async_add_executor_job(
-                        self.light_manager.receive_radio_signals, polling_interval
-                    )
-                except ConnectionError:
-                    return
-
-                for signal in signals:
-                    self.hass.bus.async_fire(RADIO_BUS_SIGNAL_EVENT, {
-                        "device_id": self.device_id,
-                        "signal_type": signal.get("signal_type"),
-                        "signal_code": signal.get("signal_code")
-                    })
-
-        self._radio_bus_unsubscribe = async_track_time_interval(
-            self.hass,
-            _handle_radio_codes,
-            timedelta(milliseconds=polling_interval)
-        )
-
-        self.hass.async_create_task(_handle_radio_codes())
-
-    def stop_radio_bus_listening(self):
-        """Stop listening for radio bus signals."""
-        if self._radio_bus_unsubscribe:
-            self._radio_bus_unsubscribe()
-            self._radio_bus_unsubscribe = None
-
-    def start_marker_updates(self, update_interval=None):
-        """Start marker update polling."""
-        if self._marker_update_unsubscribe:
-            return
-
-        update_interval = update_interval or DEFAULT_MARKER_UPDATE_INTERVAL
-
-        async def _handle_marker_update(_now=None):
-            """Update marker states."""
-            if self.light_manager:
-                try:
-                    self.markers = await self.hass.async_add_executor_job(
-                        self.light_manager.load_markers
-                    )
-                    self.hass.bus.async_fire(DATA_UPDATE_EVENT, {
-                        "device_id": self.device_id
-                    })
-                except ConnectionError:
-                    pass
-
-        self._marker_update_unsubscribe = async_track_time_interval(
-            self.hass,
-            _handle_marker_update,
-            timedelta(milliseconds=update_interval)
-        )
-
-        self.hass.async_create_task(_handle_marker_update())
-
-    def stop_marker_updates(self):
-        """Stop marker update polling."""
-        if self._marker_update_unsubscribe:
-            self._marker_update_unsubscribe()
-            self._marker_update_unsubscribe = None

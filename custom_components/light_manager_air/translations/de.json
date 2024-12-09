@@ -27,75 +27,10 @@
                     "enable_radio_bus": "Radio Bus Empfang aktivieren",
                     "polling_interval": "Funksignal Polling (ms)",
                     "enable_marker_updates": "Marker Updates aktivieren",
-                    "marker_update_interval": "Marker Update-Intervall (ms)"
+                    "marker_update_interval": "Marker Update-Intervall (ms)",
+                    "enable_weather_updates": "Wetter Updates aktivieren",
+                    "weather_update_interval": "Wetter Update-Intervall (ms)"
                 }
-            }
-        }
-    },
-    "entity": {
-        "weather": {
-            "condition": {
-                "thunderstorm_with_light_rain": "Gewitter mit leichtem Regen",
-                "thunderstorm_with_rain": "Gewitter mit Regen",
-                "thunderstorm_with_heavy_rain": "Gewitter mit starkem Regen",
-                "light_thunderstorm": "Leichtes Gewitter",
-                "thunderstorm": "Gewitter",
-                "heavy_thunderstorm": "Schweres Gewitter",
-                "ragged_thunderstorm": "Vereinzelte Gewitter",
-                "thunderstorm_with_light_drizzle": "Gewitter mit leichtem Nieselregen",
-                "thunderstorm_with_drizzle": "Gewitter mit Nieselregen",
-                "thunderstorm_with_heavy_drizzle": "Gewitter mit starkem Nieselregen",
-                
-                "light_drizzle": "Leichter Nieselregen",
-                "drizzle": "Nieselregen",
-                "heavy_drizzle": "Starker Nieselregen",
-                "light_drizzle_rain": "Leichter Nieselregen",
-                "drizzle_rain": "Nieselregen",
-                "heavy_drizzle_rain": "Starker Nieselregen",
-                "shower_rain_and_drizzle": "Regenschauer und Nieselregen",
-                "heavy_shower_rain_and_drizzle": "Starke Regenschauer und Nieselregen",
-                "shower_drizzle": "Nieselschauer",
-                
-                "light_rain": "Leichter Regen",
-                "moderate_rain": "Mäßiger Regen",
-                "heavy_rain": "Starker Regen",
-                "very_heavy_rain": "Sehr starker Regen",
-                "extreme_rain": "Extremer Regen",
-                "freezing_rain": "Gefrierender Regen",
-                "light_shower_rain": "Leichte Regenschauer",
-                "shower_rain": "Regenschauer",
-                "heavy_shower_rain": "Starke Regenschauer",
-                "ragged_shower_rain": "Vereinzelte Regenschauer",
-                
-                "light_snow": "Leichter Schneefall",
-                "snow": "Schneefall",
-                "heavy_snow": "Starker Schneefall",
-                "sleet": "Schneeregen",
-                "light_shower_sleet": "Leichte Schneeregenschauer",
-                "shower_sleet": "Schneeregenschauer",
-                "light_rain_and_snow": "Leichter Schneeregen",
-                "rain_and_snow": "Schneeregen",
-                "light_shower_snow": "Leichte Schneeschauer",
-                "shower_snow": "Schneeschauer",
-                "heavy_shower_snow": "Starke Schneeschauer",
-                
-                "mist": "Dunst",
-                "smoke": "Rauch",
-                "haze": "Dunst",
-                "sand_dust": "Sand/Staub",
-                "fog": "Nebel",
-                "sand": "Sand",
-                "dust": "Staub",
-                "volcanic_ash": "Vulkanasche",
-                "squalls": "Sturmböen",
-                "tornado": "Tornado",
-                
-                "clear_sky": "Klarer Himmel",
-                
-                "few_clouds": "Leicht bewölkt",
-                "scattered_clouds": "Aufgelockerte Bewölkung",
-                "broken_clouds": "Stark bewölkt",
-                "overcast_clouds": "Bedeckt"
             }
         }
     }

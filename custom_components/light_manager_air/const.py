@@ -2,6 +2,22 @@
 from enum import Enum
 
 import voluptuous as vol
+from homeassistant.components.weather import (
+    ATTR_CONDITION_CLEAR_NIGHT,
+    ATTR_CONDITION_CLOUDY,
+    ATTR_CONDITION_FOG,
+    ATTR_CONDITION_HAIL,
+    ATTR_CONDITION_LIGHTNING,
+    ATTR_CONDITION_LIGHTNING_RAINY,
+    ATTR_CONDITION_PARTLYCLOUDY,
+    ATTR_CONDITION_POURING,
+    ATTR_CONDITION_RAINY,
+    ATTR_CONDITION_SNOWY,
+    ATTR_CONDITION_SNOWY_RAINY,
+    ATTR_CONDITION_SUNNY,
+    ATTR_CONDITION_WINDY,
+    ATTR_CONDITION_EXCEPTIONAL,
+)
 
 DOMAIN = "light_manager_air"
 CONF_DISCOVERED_DEVICE = "discovered_device"
@@ -17,83 +33,78 @@ DEFAULT_NAME = "Light Manager Air"
 
 DEFAULT_RADIO_POLLING_INTERVAL = 2000
 DEFAULT_MARKER_UPDATE_INTERVAL = 5000
+DEFAULT_WEATHER_UPDATE_INTERVAL = 300000
 
 # Weather constants
-WEATHER_INDOOR_CHANNEL_ID = 0
-WEATHER_CHANNEL_NAME_TEMPLATE = "Weather Channel {}"
-WEATHER_CONDITION_MAP = {
+WEATHER_CHANNEL_NAME_TEMPLATE = "Channel {}"
+
+# Mapping of OpenWeatherMap IDs to Home Assistant weather conditions
+HA_CONDITION_MAP = {
     # Thunderstorm
-    200: "thunderstorm_with_light_rain",
-    201: "thunderstorm_with_rain",
-    202: "thunderstorm_with_heavy_rain",
-    210: "light_thunderstorm",
-    211: "thunderstorm",
-    212: "heavy_thunderstorm",
-    221: "ragged_thunderstorm",
-    230: "thunderstorm_with_light_drizzle",
-    231: "thunderstorm_with_drizzle",
-    232: "thunderstorm_with_heavy_drizzle",
+    200: ATTR_CONDITION_LIGHTNING_RAINY,  # thunderstorm with light rain
+    201: ATTR_CONDITION_LIGHTNING_RAINY,  # thunderstorm with rain
+    202: ATTR_CONDITION_LIGHTNING_RAINY,  # thunderstorm with heavy rain
+    210: ATTR_CONDITION_LIGHTNING,        # light thunderstorm
+    211: ATTR_CONDITION_LIGHTNING,        # thunderstorm
+    212: ATTR_CONDITION_LIGHTNING,        # heavy thunderstorm
+    221: ATTR_CONDITION_LIGHTNING,        # ragged thunderstorm
+    230: ATTR_CONDITION_LIGHTNING_RAINY,  # thunderstorm with light drizzle
+    231: ATTR_CONDITION_LIGHTNING_RAINY,  # thunderstorm with drizzle
+    232: ATTR_CONDITION_LIGHTNING_RAINY,  # thunderstorm with heavy drizzle
     
-    # Drizzle
-    300: "light_drizzle",
-    301: "drizzle",
-    302: "heavy_drizzle",
-    310: "light_drizzle_rain",
-    311: "drizzle_rain",
-    312: "heavy_drizzle_rain",
-    313: "shower_rain_and_drizzle",
-    314: "heavy_shower_rain_and_drizzle",
-    321: "shower_drizzle",
-    
-    # Rain
-    500: "light_rain",
-    501: "moderate_rain",
-    502: "heavy_rain",
-    503: "very_heavy_rain",
-    504: "extreme_rain",
-    511: "freezing_rain",
-    520: "light_shower_rain",
-    521: "shower_rain",
-    522: "heavy_shower_rain",
-    531: "ragged_shower_rain",
+    # Drizzle & Rain
+    300: ATTR_CONDITION_RAINY,  # light intensity drizzle
+    301: ATTR_CONDITION_RAINY,  # drizzle
+    302: ATTR_CONDITION_RAINY,  # heavy intensity drizzle
+    310: ATTR_CONDITION_RAINY,  # light intensity drizzle rain
+    311: ATTR_CONDITION_RAINY,  # drizzle rain
+    312: ATTR_CONDITION_RAINY,  # heavy intensity drizzle rain
+    313: ATTR_CONDITION_RAINY,  # shower rain and drizzle
+    314: ATTR_CONDITION_RAINY,  # heavy shower rain and drizzle
+    321: ATTR_CONDITION_RAINY,  # shower drizzle
+    500: ATTR_CONDITION_RAINY,  # light rain
+    501: ATTR_CONDITION_RAINY,  # moderate rain
+    502: ATTR_CONDITION_POURING,  # heavy intensity rain
+    503: ATTR_CONDITION_POURING,  # very heavy rain
+    504: ATTR_CONDITION_POURING,  # extreme rain
+    511: ATTR_CONDITION_SNOWY_RAINY,  # freezing rain
+    520: ATTR_CONDITION_RAINY,  # light intensity shower rain
+    521: ATTR_CONDITION_RAINY,  # shower rain
+    522: ATTR_CONDITION_POURING,  # heavy intensity shower rain
+    531: ATTR_CONDITION_RAINY,  # ragged shower rain
     
     # Snow
-    600: "light_snow",
-    601: "snow",
-    602: "heavy_snow",
-    611: "sleet",
-    612: "light_shower_sleet",
-    613: "shower_sleet",
-    615: "light_rain_and_snow",
-    616: "rain_and_snow",
-    620: "light_shower_snow",
-    621: "shower_snow",
-    622: "heavy_shower_snow",
+    600: ATTR_CONDITION_SNOWY,  # light snow
+    601: ATTR_CONDITION_SNOWY,  # snow
+    602: ATTR_CONDITION_SNOWY,  # heavy snow
+    611: ATTR_CONDITION_SNOWY_RAINY,  # sleet
+    612: ATTR_CONDITION_SNOWY_RAINY,  # light shower sleet
+    613: ATTR_CONDITION_SNOWY_RAINY,  # shower sleet
+    615: ATTR_CONDITION_SNOWY_RAINY,  # light rain and snow
+    616: ATTR_CONDITION_SNOWY_RAINY,  # rain and snow
+    620: ATTR_CONDITION_SNOWY,  # light shower snow
+    621: ATTR_CONDITION_SNOWY,  # shower snow
+    622: ATTR_CONDITION_SNOWY,  # heavy shower snow
     
     # Atmosphere
-    701: "mist",
-    711: "smoke",
-    721: "haze",
-    731: "sand_dust",
-    741: "fog",
-    751: "sand",
-    761: "dust",
-    762: "volcanic_ash",
-    771: "squalls",
-    781: "tornado",
+    701: ATTR_CONDITION_FOG,     # mist
+    711: ATTR_CONDITION_FOG,     # smoke
+    721: ATTR_CONDITION_FOG,     # haze
+    731: ATTR_CONDITION_FOG,     # sand/dust
+    741: ATTR_CONDITION_FOG,     # fog
+    751: ATTR_CONDITION_FOG,     # sand
+    761: ATTR_CONDITION_FOG,     # dust
+    762: ATTR_CONDITION_FOG,     # volcanic ash
+    771: ATTR_CONDITION_WINDY,   # squalls
+    781: ATTR_CONDITION_EXCEPTIONAL,  # tornado
     
-    # Clear
-    800: "clear_sky",
-    
-    # Clouds
-    801: "few_clouds",
-    802: "scattered_clouds",
-    803: "broken_clouds",
-    804: "overcast_clouds"
+    # Clear & Clouds
+    800: ATTR_CONDITION_CLEAR_NIGHT,  # clear sky
+    801: ATTR_CONDITION_PARTLYCLOUDY,  # few clouds
+    802: ATTR_CONDITION_PARTLYCLOUDY,  # scattered clouds
+    803: ATTR_CONDITION_CLOUDY,  # broken clouds
+    804: ATTR_CONDITION_CLOUDY,  # overcast clouds
 }
-
-# Entity naming
-WEATHER_CHANNEL_NAME_TEMPLATE = "Weather Channel {}"
 
 # Rate Limiter defaults
 DEFAULT_RATE_LIMIT = 5
@@ -109,7 +120,7 @@ CONF_TARGET_TYPE = "target_type"
 
 VALID_TARGET_TYPES = ["light", "switch", "cover"]
 
-# Schema für Entity Konversion
+# Schema for Entity Conversion
 CONVERSION_SCHEMA = vol.Schema({
     vol.Required(CONF_ZONE_NAME): str,
     vol.Required(CONF_ACTUATOR_NAME): str,
@@ -120,7 +131,7 @@ CONVERSION_SCHEMA = vol.Schema({
 CONF_ENABLE_RADIO_BUS = "enable_radio_bus"
 CONF_RADIO_POLLING_INTERVAL = "polling_interval"
 
-# Schema für das Mapping
+# Schema for the Mapping
 MAPPING_SCHEMA = vol.Schema({
     vol.Required(CONF_MARKER_ID): int,
     vol.Required(CONF_ENTITY_ID): str,
@@ -131,6 +142,9 @@ CONF_ENABLE_MARKER_UPDATES = "enable_marker_updates"
 
 MIN_POLLING_CALLS = 3
 POLLING_TIME_WINDOW = 60  # in seconds
+
+CONF_ENABLE_WEATHER_UPDATES = "enable_weather_updates"
+CONF_WEATHER_UPDATE_INTERVAL = "weather_update_interval"
 
 class Priority(Enum):
     EVENT = 1

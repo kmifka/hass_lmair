@@ -25,7 +25,11 @@
                 "description": "Configure Light Manager Air options",
                 "data": {
                     "enable_radio_bus": "Enable Radio Bus Reception",
-                    "polling_interval": "Radio Signal Polling"
+                    "polling_interval": "Radio Signal Polling (ms)",
+                    "enable_marker_updates": "Enable Marker Updates",
+                    "marker_update_interval": "Marker Update Interval (ms)",
+                    "enable_weather_updates": "Enable Weather Updates",
+                    "weather_update_interval": "Weather Update Interval (ms)"
                 }
             }
         }

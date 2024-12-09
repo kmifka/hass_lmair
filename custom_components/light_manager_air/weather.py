@@ -11,13 +11,15 @@ from homeassistant.const import (
     UnitOfTemperature,
     UnitOfPressure,
     UnitOfSpeed,
+    UnitOfPrecipitationDepth,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
     DOMAIN,
-    WEATHER_CONDITION_MAP, WEATHER_CHANNEL_NAME_TEMPLATE,
+    WEATHER_CHANNEL_NAME_TEMPLATE,
+    HA_CONDITION_MAP,
 )
 from .coordinator import LightManagerAirCoordinator
 from .base_entity import LightManagerAirBaseEntity
@@ -34,7 +36,6 @@ async def async_setup_entry(
 
     entities = []
     weather_channels = coordinator.data.get("weather_channels", [])
-    _LOGGER.debug(weather_channels)
     
     for channel in weather_channels:
         # Only add weather entities for channels with weather_id
@@ -60,11 +61,8 @@ class LightManagerAirWeather(LightManagerAirBaseEntity, WeatherEntity):
         self._attr_native_temperature_unit = UnitOfTemperature.CELSIUS
         self._attr_native_pressure_unit = UnitOfPressure.HPA
         self._attr_native_wind_speed_unit = UnitOfSpeed.KILOMETERS_PER_HOUR
-
-    @property
-    def condition(self) -> str | None:
-        """Return the current condition."""
-        return WEATHER_CONDITION_MAP.get(self.weather_channel.weather_id)
+        self._attr_native_precipitation_unit = UnitOfPrecipitationDepth.MILLIMETERS
+        self._attr_condition = HA_CONDITION_MAP.get(channel.weather_id)
 
     @property
     def native_temperature(self) -> float | None:
@@ -82,6 +80,11 @@ class LightManagerAirWeather(LightManagerAirBaseEntity, WeatherEntity):
         return self.weather_channel.wind_speed
 
     @property
-    def wind_bearing(self) -> int | None:
-        """Return the current wind direction."""
+    def wind_bearing(self) -> float | None:
+        """Return the current wind bearing in degrees."""
         return self.weather_channel.wind_direction
+
+    @property
+    def native_precipitation(self) -> float | None:
+        """Return the current precipitation amount in mm."""
+        return self.weather_channel.rain
