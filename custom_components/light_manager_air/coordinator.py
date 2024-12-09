@@ -121,7 +121,7 @@ class LightManagerAirCoordinator(DataUpdateCoordinator):
                 self.light_manager.load_markers
             )
             # Update weather data
-            weather_channels = await self.hass.async_add_executor_job(
+            self.weather_channels = await self.hass.async_add_executor_job(
                 self.light_manager.load_weather_channels
             )
             
@@ -129,7 +129,7 @@ class LightManagerAirCoordinator(DataUpdateCoordinator):
                 "zones": self.zones,
                 "scenes": self.scenes,
                 "markers": self.markers,
-                "weather_channels": weather_channels,
+                "weather_channels": self.weather_channels,
             }
 
             self.hass.bus.async_fire(DATA_UPDATE_EVENT, {

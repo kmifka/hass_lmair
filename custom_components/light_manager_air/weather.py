@@ -1,4 +1,5 @@
 """Weather platform for Light Manager Air."""
+import logging
 from typing import Any
 
 from homeassistant.components.weather import (
@@ -11,16 +12,17 @@ from homeassistant.const import (
     UnitOfPressure,
     UnitOfSpeed,
 )
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
     DOMAIN,
-    WEATHER_INDOOR_CHANNEL_ID,
-    WEATHER_CHANNEL_NAME_TEMPLATE,
+    WEATHER_CONDITION_MAP, WEATHER_CHANNEL_NAME_TEMPLATE,
 )
 from .coordinator import LightManagerAirCoordinator
 from .base_entity import LightManagerAirBaseEntity
+
+_LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -32,8 +34,12 @@ async def async_setup_entry(
 
     entities = []
     weather_channels = coordinator.data.get("weather_channels", [])
+    _LOGGER.debug(weather_channels)
+    
     for channel in weather_channels:
-        entities.append(LightManagerAirWeather(coordinator, channel))
+        # Only add weather entities for channels with weather_id
+        if channel.weather_id:
+            entities.append(LightManagerAirWeather(coordinator, channel))
     
     async_add_entities(entities)
 
@@ -55,14 +61,10 @@ class LightManagerAirWeather(LightManagerAirBaseEntity, WeatherEntity):
         self._attr_native_pressure_unit = UnitOfPressure.HPA
         self._attr_native_wind_speed_unit = UnitOfSpeed.KILOMETERS_PER_HOUR
 
-    async def async_added_to_hass(self) -> None:
-        """When entity is added to hass."""
-        await super().async_added_to_hass()
-
-        if self.weather_channel.channel_id == WEATHER_INDOOR_CHANNEL_ID:
-            self._attr_name = "Innensensor"
-            self._attr_condition = "Raumklima"
-            self.async_write_ha_state()
+    @property
+    def condition(self) -> str | None:
+        """Return the current condition."""
+        return WEATHER_CONDITION_MAP.get(self.weather_channel.weather_id)
 
     @property
     def native_temperature(self) -> float | None:

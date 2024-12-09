@@ -15,7 +15,7 @@ from .coordinator import LightManagerAirCoordinator
 _LOGGER = logging.getLogger(__name__)
 _LOGGER.setLevel(logging.DEBUG)
 
-PLATFORMS = [Platform.LIGHT, Platform.SCENE, Platform.COVER, Platform.SWITCH, Platform.WEATHER]
+PLATFORMS = [Platform.LIGHT, Platform.SCENE, Platform.COVER, Platform.SWITCH, Platform.WEATHER, Platform.SENSOR, Platform.EVENT]
 
 CONFIG_SCHEMA = vol.Schema(
     {
