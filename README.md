@@ -74,7 +74,7 @@ You can customize these intervals to suit your needs or disable polling entirely
 
 1. Navigate to **Settings** → **Devices & Services**.
 2. Locate the Light Manager Air integration and click **Options**.
-3. Set your desired intervals or disable polling by setting the interval to `0`.
+3. Set your desired intervals or disable polling by uncheck the checkbox.
 
 ⚠️ **Warning**: Short intervals improve response times but may impact performance. Use default settings as a starting point and adjust based on your system's capabilities.
 
