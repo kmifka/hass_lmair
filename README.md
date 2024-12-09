@@ -78,7 +78,7 @@ You can customize these intervals to suit your needs or disable polling entirely
 
 ⚠️ **Warning**: Short intervals improve response times but may impact performance. Use default settings as a starting point and adjust based on your system's capabilities.
 
-### Marker Mapping (Optional Feature)
+### Marker Mapping
 
 Markers can be used to reflect and **set the states** of stateless actuators (e.g., lights, blinds) via the Light Manager Air. This is especially useful for:
 
