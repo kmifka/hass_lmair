@@ -1,20 +1,21 @@
-# Light Manager Air Integration
+# Light Manager Air Integration for Home Assistant
 
-A Home Assistant custom integration for the Light Manager Air by jb media.
+A Home Assistant custom integration for the jb media's Light Manager Air.
 
 ## Key Features
 
 - **Automatic device discovery** on your local network
-- Full control of:
+- **Full control of**:
   - **Lights** (including dimming)
   - **Blinds/Covers**
   - **Markers**
   - **Scenes**
-- **Reception of 433 MHz and 868 MHz radio signals**
-- Real-time **marker status updates**, with the ability to **set marker states**
-- Integration of **weather data** from connected weather stations
-- Automatic mapping of zones to **Home Assistant areas**
-- Marker mapping to use markers as state proxies for stateless devices.
+- **Radio reception**: Receive 433 MHz and 868 MHz radio signals
+- **Marker status updates**: Read an control markers as a switch in Home Assistant
+- **Weather data**: Integration of connected weather channels
+- **Marker mapping**: Use markers as state proxies for stateless devices.
+- **Ignore Zones**: Configure zones to be ignored in Home Assistant
+- **Entity Type Conversion**: Convert entities to different types (e.g., light to switch)
 
 This integration bridges jb media's Light Manager Air with Home Assistant, unlocking advanced home automation capabilities.
 
@@ -51,8 +52,8 @@ This integration bridges jb media's Light Manager Air with Home Assistant, unloc
 4. **Restart Home Assistant**
    Restart Home Assistant to apply changes.
 
-5. **Add the Integration in Home Assistant**
-   Go to **Settings** → **Devices & Services** → **Add Integration** and follow the setup instructions.
+5. **Add the integration via the UI**:
+   Go to **Settings** → **Devices & Services** → **Add Integration** and search for "Light Manager Air".
 
 ---
 
@@ -64,6 +65,7 @@ The Light Manager Air relies on polling for updates because it does not support 
 
 1. **Marker Updates**: Updates the status of markers (Default: `5000 ms`).
 2. **Radio Signals**: Checks for 433 MHz and 868 MHz signals (Default: `2000 ms`).
+3. **Weather Updates**: Retrieves weather data from connected weather stations (Default: `300000 ms`).
 
 You can customize these intervals to suit your needs or disable polling entirely if not required:
 
@@ -72,8 +74,6 @@ You can customize these intervals to suit your needs or disable polling entirely
 3. Set your desired intervals or disable polling by setting the interval to `0`.
 
 ⚠️ **Warning**: Short intervals improve response times but may impact performance. Use default settings as a starting point and adjust based on your system's capabilities.
-
----
 
 ### Marker Mapping (Optional Feature)
 
@@ -84,7 +84,6 @@ Markers can be used to reflect and **set the states** of stateless actuators (e.
 - Triggering and managing scenes
 
 To configure marker mappings, add the following to your `configuration.yaml` file:
-
 ```yaml
 light_manager_air:
   marker_mappings:
@@ -96,3 +95,29 @@ light_manager_air:
       entity_id: "light.dining_room"
     - marker_id: 30
       entity_id: "light.fountain_pump"
+```
+
+To ensure markers are updated when an actuator is operated, configure the Light Manager in AirStudio. In the actuator management section, select the mapped marker in the "Marker | Sensor" column.
+
+### Ignored Zones
+
+You can configure zones to be ignored by adding them to your `configuration.yaml` file:
+
+```yaml
+light_manager_air:
+  ignored_zones:
+  - "Living Room"
+  - "Garage"
+```
+
+### Entity Type Conversion
+
+Convert entities to different types using the `entity_conversions` configuration. This is useful for changing how entities are represented in Home Assistant:
+
+```yaml
+light_manager_air:
+  entity_conversions:
+    - zone_name: "Living Room"
+      actuator_name: "Ceiling Light"
+      target_type: "switch"
+```

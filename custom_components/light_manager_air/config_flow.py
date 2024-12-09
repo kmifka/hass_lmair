@@ -8,15 +8,12 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_USERNAME, CONF_PASSWORD
 from homeassistant.data_entry_flow import FlowResult
-from homeassistant.helpers.selector import selector, SelectSelector, SelectSelectorConfig, SelectSelectorMode
+from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
+from packaging import version
 
 from .const import (
     DOMAIN,
     DEFAULT_RADIO_POLLING_INTERVAL,
-    DEFAULT_RATE_LIMIT,
-    DEFAULT_RATE_WINDOW,
-    CONF_RATE_LIMIT,
-    CONF_RATE_WINDOW,
     CONF_ENABLE_RADIO_BUS,
     CONF_RADIO_POLLING_INTERVAL,
     CONF_ENABLE_MARKER_UPDATES,
@@ -25,6 +22,7 @@ from .const import (
     CONF_ENABLE_WEATHER_UPDATES,
     CONF_WEATHER_UPDATE_INTERVAL,
     DEFAULT_WEATHER_UPDATE_INTERVAL,
+    MINIMUM_FIRMWARE_VERSION,
 )
 from .lmair import LMAir
 
@@ -56,20 +54,24 @@ class LightManagerAirConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     LMAir, user_input[CONF_HOST], user_input.get(CONF_USERNAME), user_input.get(CONF_PASSWORD)
                 )
 
-                await self.async_set_unique_id(lm.mac_address)
-                self._abort_if_unique_id_configured()
+                # Check firmware version
+                if version.parse(lm.fw_version) < version.parse(MINIMUM_FIRMWARE_VERSION):
+                    flow_error = {"base": "firmware_too_old"}
+                else:
+                    await self.async_set_unique_id(lm.mac_address)
+                    self._abort_if_unique_id_configured()
 
-                return self.async_create_entry(
-                    title=lm.mac_address,
-                    data={
-                        CONF_HOST: lm.host, 
-                        CONF_USERNAME: lm.username, 
-                        CONF_PASSWORD: lm.password
-                    },
-                    options={CONF_ENABLE_RADIO_BUS: True}
-                )
+                    return self.async_create_entry(
+                        title=lm.mac_address,
+                        data={
+                            CONF_HOST: lm.host, 
+                            CONF_USERNAME: lm.username, 
+                            CONF_PASSWORD: lm.password
+                        },
+                        options={CONF_ENABLE_RADIO_BUS: True}
+                    )
             except ConnectionError:
-                flow_error={"base": "cannot_connect"}
+                flow_error = {"base": "cannot_connect"}
 
 
         return self.async_show_form(
