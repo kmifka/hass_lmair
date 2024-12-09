@@ -1,3 +1,5 @@
+[![BuyMeCoffee][buymecoffeebadge]][https://buymeacoffee.com/yourusername]
+
 # Light Manager Air Integration for Home Assistant
 
 A Home Assistant custom integration for the jb media's Light Manager Air.
