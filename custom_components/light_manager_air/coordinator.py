@@ -46,16 +46,10 @@ class UpdateHandler:
         """Handle the update."""
         if self._coordinator.light_manager:
             try:
+                _LOGGER.debug("UPDATE " + self._update_type)
                 # Dynamically call the corresponding method
                 update_method = getattr(self._coordinator.light_manager, f"load_{self._update_type}")
                 result = await self._hass.async_add_executor_job(update_method)
-                
-                # Save result in Coordinator
-                setattr(self._coordinator, self._update_type, result)
-                
-                self._hass.bus.async_fire(DATA_UPDATE_EVENT, {
-                    "device_id": self._coordinator.device_id
-                })
                 
                 # Special handling for Radio Bus signals
                 if self._update_type == "radio_signals":
@@ -65,13 +59,22 @@ class UpdateHandler:
                             "signal_type": signal.get("signal_type"),
                             "signal_code": signal.get("signal_code")
                         })
+                else:
+                    setattr(self._coordinator, self._update_type, result)
+                    self._hass.bus.async_fire(DATA_UPDATE_EVENT, {
+                        "device_id": self._coordinator.device_id
+                    })
+
             except ConnectionError:
+                _LOGGER.debug("ERROR " + self._update_type)
                 pass
 
     def start(self, update_interval=None):
         """Start periodic updates."""
         if self._unsubscribe:
             return
+
+        _LOGGER.debug("START " + self._update_type)
 
         update_interval = update_interval or self._default_interval
 
@@ -104,10 +107,10 @@ class LightManagerAirCoordinator(DataUpdateCoordinator):
         self.entry = entry
         self.device_id = None
         self.light_manager = None
-        self.zones = None
-        self.scenes = None
-        self.markers = None
-        self.weather_channels = None
+        self.zones = []
+        self.scenes = []
+        self.markers = []
+        self.weather_channels = []
         self._device_info = None
 
         self._update_handlers = {
@@ -155,11 +158,15 @@ class LightManagerAirCoordinator(DataUpdateCoordinator):
         except ConnectionError as e:
             raise ConfigEntryNotReady(e)
 
+        self.zones, self.scenes = await self.hass.async_add_executor_job(
+            self.light_manager.load_fixtures
+        )
+
         device_registry = dr.async_get(self.hass)
         self._device_info = {
             "identifiers": {(DOMAIN, self.light_manager.mac_address)},
             "name": f"Light Manager Air",
-            "manufacturer": "jb media",
+            "manufacturer": "jbmedia",
             "model": "Light Manager Air",
             "sw_version": self.light_manager.fw_version,
         }
@@ -180,9 +187,6 @@ class LightManagerAirCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self):
         """Fetch data from Light Manager Air."""
         try:
-            self.zones, self.scenes = await self.hass.async_add_executor_job(
-                self.light_manager.load_fixtures
-            )
             # Update marker states
             self.markers = await self.hass.async_add_executor_job(
                 self.light_manager.load_markers
@@ -191,19 +195,10 @@ class LightManagerAirCoordinator(DataUpdateCoordinator):
             self.weather_channels = await self.hass.async_add_executor_job(
                 self.light_manager.load_weather_channels
             )
-            
-            data = {
-                "zones": self.zones,
-                "scenes": self.scenes,
-                "markers": self.markers,
-                "weather_channels": self.weather_channels,
-            }
 
             self.hass.bus.async_fire(DATA_UPDATE_EVENT, {
                 "device_id": self.device_id
             })
-            
-            return data
             
         except ConnectionError as e:
             raise UpdateFailed(e)

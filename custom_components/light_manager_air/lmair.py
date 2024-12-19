@@ -34,7 +34,6 @@ class _LMConnector:
         self._adapter_ip: str = adapter_ip or self._get_default_adapter_ip()
         self._username: str = username
         self._password: str = password
-        self._marker_states = None
 
     def receive_radio_signals(self, timeout: int = None) -> list[dict[str, str]]:
         """Call the /poll.htm endpoint and returns any radio codes found.
@@ -109,7 +108,8 @@ class _LMConnector:
                 pass
             sock.close()
 
-    def send(self, path: str, cmd: [str, str] = None, retry: bool = False, check_response: bool = True, timeout: int = None) -> Response:
+    def send(self, path: str, cmd: [str, str] = None, retry: bool = False, check_response: bool = True,
+             timeout: int = None) -> Response:
         """Sends a command to the Light Manager.
 
         :param retry: if true it tries to retry the command once
@@ -125,6 +125,8 @@ class _LMConnector:
             auth = (self._username, self._password)
 
         timeout = 3 or (timeout or _LMConnector.DEFAULT_TIMEOUT) / 1000
+
+        _LOGGER.debug("SEND" + self._lm_url + path + "; DATA: " + str(cmd))
 
         try:
             if not cmd:
@@ -182,10 +184,10 @@ class _LMConnector:
         except Exception as e:
             raise ConnectionError("Unable to load weather") from e
 
-    def update_marker_states(self) -> None:
+    def load_marker_states(self) -> str:
         """Updates the marker states from params.json."""
         params = self.load_params()
-        self._marker_states = params.get("marker state", "")
+        return params.get("marker state", "")
 
     @property
     def marker_states(self) -> str:
@@ -241,7 +243,7 @@ class LMCommand(_LMFixture):
 
     def __init__(self, connector: _LMConnector,
                  name: Optional[str] = None,
-                 cmd: Optional[[(str, str)] | str] = None,
+                 cmd: Optional[str] = None,
                  config: Optional[ET.Element] = None):
         """
         :param connector: Light Manager connector.
@@ -251,8 +253,11 @@ class LMCommand(_LMFixture):
         """
         super().__init__(name or config.findtext("./name"))
         self._connector = connector
-        self._cmd = cmd or _LMConnector.COMMAND_KEY + "=" + config.findtext("./param")
-        self._cmd = parse_qsl(self._cmd) if isinstance(self._cmd, str) else self._cmd
+        self._cmd = [
+            (_LMConnector.COMMAND_KEY, cmd or
+             config.findtext("./param")
+             .replace("scene=0&scene=", "idx,")) # replace old command with new scene command
+        ]
 
     @property
     def name(self) -> str:
@@ -298,17 +303,18 @@ class LMActuator(_LMCommandContainer):
 class LMMarker(_LMCommandContainer):
     """Describes a marker."""
 
-    def __init__(self, marker_id: int, connector: _LMConnector):
+    def __init__(self, marker_id: int, state: bool, connector: _LMConnector):
         """
         :param marker_id: ID of the marker
         :param connector: Light Manager connector
         """
         super().__init__(f"Marker {marker_id + 1}", connector)
         self._marker_id = marker_id
+        self._state = state
         self._commands = [
             LMCommand(connector, "on", f"typ,smk,{marker_id},1"),
+            LMCommand(connector, "toggle", f"typ,smk,{marker_id},2"),
             LMCommand(connector, "off", f"typ,smk,{marker_id},0"),
-            LMCommand(connector, "toggle", f"typ,smk,{marker_id},2")
         ]
 
     @property
@@ -323,7 +329,7 @@ class LMMarker(_LMCommandContainer):
         """
         :return: Current state of the marker.
         """
-        return self._connector.marker_states[self._marker_id] == "1"
+        return self._state
 
 
 class LMWeatherChannel(_LMFixture):
@@ -389,7 +395,11 @@ class LMZone(_LMFixture):
         :param connector: Light Manager connector.
         """
         super().__init__(config.findtext("./zonename"))
-        self._actuators = [LMActuator(actuator, connector) for actuator in config.findall("./actuators/actuator")]
+        self._actuators = []
+        for actuator in config.findall("./actuators/actuator"):
+            new_actuator = LMActuator(actuator, connector)
+            if len(new_actuator.commands) > 0:
+                self._actuators.append(new_actuator)
 
     @property
     def name(self) -> str:
@@ -529,7 +539,7 @@ class LMAir(_LMFixture):
         """
         if not self._config:
             self._config = self._connector.load_config()
-            
+
         zones = [LMZone(zone, self._connector) for zone in self._config.findall("./zone")]
         scenes = [LMCommand(self._connector, config=scene) for scene in self._config.findall("./lightscenes/scene")]
         return zones, scenes
@@ -539,18 +549,18 @@ class LMAir(_LMFixture):
 
         :return: List of all markers
         """
-        self.update_marker_states()
-        marker_states = self._connector.marker_states
-        
+        marker_states = self._connector.load_marker_states()
+
         markers = []
         if marker_states:
             for i, state in enumerate(marker_states):
                 if state in ["0", "1"]:  # Ignore invalid states
                     markers.append(LMMarker(
                         marker_id=i,
+                        state=state == "1",
                         connector=self._connector
                     ))
-        
+
         return markers
 
     def load_weather_channels(self) -> List[LMWeatherChannel]:
@@ -573,13 +583,9 @@ class LMAir(_LMFixture):
 
         return channels
 
-    def update_marker_states(self) -> None:
-        """Updates the marker states in the connector from the Light Manager."""
-        self._connector.update_marker_states()
-
     def send_command(self, command: Optional[str]):
         """Sends a custom command.
 
         :param command: Command to send (e.g., 'typ,it,did,0996,aid,215,acmd,0,seq,6').
         """
-        LMCommand(self._connector, name="custom_command", cmd=[(_LMConnector.COMMAND_KEY, command)]).call()
+        LMCommand(self._connector, name="custom_command", cmd=command).call()

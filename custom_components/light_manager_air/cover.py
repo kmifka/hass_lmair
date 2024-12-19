@@ -80,15 +80,15 @@ class LightManagerAirCover(LightManagerAirBaseEntity, ToggleCommandMixin, CoverE
     @property
     def is_closed(self) -> bool | None:
         """Return if the cover is closed."""
-        if self._mapped_marker:
-            state = self._mapped_marker.state
+        if self._mapped_marker_state is not None:
+            state = self._mapped_marker_state
             return state if self._invert_marker else not state
         return None
 
     def is_open(self) -> bool | None:
         """Return if the cover is open."""
-        if self._mapped_marker:
-            state = self._mapped_marker.state
+        if self._mapped_marker_state is not None:
+            state = self._mapped_marker_state
             return not state if self._invert_marker else state
         return None
 

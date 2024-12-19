@@ -23,9 +23,8 @@ async def async_setup_entry(
     entities = []
     
     # Add marker switches
-    if coordinator.markers:
-        for marker in coordinator.markers:
-            entities.append(LightManagerAirMarkerSwitch(coordinator, marker))
+    for marker in coordinator.markers:
+        entities.append(LightManagerAirMarkerSwitch(coordinator, marker))
 
     # Add converted switches
     for zone in coordinator.zones:
@@ -50,12 +49,16 @@ class LightManagerAirMarkerSwitch(LightManagerAirBaseEntity, ToggleCommandMixin,
             command_container=marker,
             unique_id_suffix=f"marker_{marker.marker_id}"
         )
+        self._marker_id = marker.marker_id
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def is_on(self) -> bool:
         """Return true if the marker is on."""
-        return self._command_container.state
+        for marker in self._coordinator.markers:
+            if marker.marker_id == self._marker_id:
+                return marker.state
+        return False
 
 
 class LightManagerAirSwitch(LightManagerAirBaseEntity, ToggleCommandMixin, SwitchEntity):

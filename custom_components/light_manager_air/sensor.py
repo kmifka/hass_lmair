@@ -1,4 +1,6 @@
 """Sensor platform for Light Manager Air."""
+import logging
+
 from homeassistant.components.sensor import (
     SensorEntity,
     SensorDeviceClass,
@@ -9,12 +11,15 @@ from homeassistant.const import (
     PERCENTAGE,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .base_entity import LightManagerAirBaseEntity
 from .const import DOMAIN, WEATHER_CHANNEL_NAME_TEMPLATE
 from .coordinator import LightManagerAirCoordinator
+from .weather import WeatherChannelMixin
+
+_LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -25,9 +30,8 @@ async def async_setup_entry(
     coordinator: LightManagerAirCoordinator = hass.data[DOMAIN][entry.entry_id]
 
     entities = []
-    weather_channels = coordinator.data.get("weather_channels", [])
-    
-    for channel in weather_channels:
+
+    for channel in coordinator.weather_channels:
         # Skip channels that provide full weather data
         if channel.weather_id:
             continue
@@ -42,7 +46,7 @@ async def async_setup_entry(
 
     async_add_entities(entities)
 
-class LightManagerAirTemperatureSensor(LightManagerAirBaseEntity, SensorEntity):
+class LightManagerAirTemperatureSensor(LightManagerAirBaseEntity, WeatherChannelMixin, SensorEntity):
     """Temperature sensor for Light Manager Air."""
 
     _attr_device_class = SensorDeviceClass.TEMPERATURE
@@ -51,7 +55,7 @@ class LightManagerAirTemperatureSensor(LightManagerAirBaseEntity, SensorEntity):
 
     def __init__(self, coordinator: LightManagerAirCoordinator, channel) -> None:
         """Initialize the sensor."""
-        self.weather_channel = channel
+        self.weather_channel_id = channel.channel_id
         
         name_suffix = WEATHER_CHANNEL_NAME_TEMPLATE.format(channel.channel_id)
         
@@ -63,12 +67,18 @@ class LightManagerAirTemperatureSensor(LightManagerAirBaseEntity, SensorEntity):
         
         self._attr_name = name_suffix
 
+    @callback
+    def _handle_coordinator_update(self, event):
+        _LOGGER.debug("UPDATE SENSOR: "  + str(self._get_weather_channel().temperature))
+        super()._handle_coordinator_update(event)
+
     @property
     def native_value(self) -> float | None:
         """Return the temperature."""
-        return self.weather_channel.temperature
+        channel = self._get_weather_channel()
+        return channel.temperature if channel else None
 
-class LightManagerAirHumiditySensor(LightManagerAirBaseEntity, SensorEntity):
+class LightManagerAirHumiditySensor(LightManagerAirBaseEntity, WeatherChannelMixin, SensorEntity):
     """Humidity sensor for Light Manager Air."""
 
     _attr_device_class = SensorDeviceClass.HUMIDITY
@@ -77,7 +87,7 @@ class LightManagerAirHumiditySensor(LightManagerAirBaseEntity, SensorEntity):
 
     def __init__(self, coordinator: LightManagerAirCoordinator, channel) -> None:
         """Initialize the sensor."""
-        self.weather_channel = channel
+        self.weather_channel_id = channel.channel_id
         
         name_suffix = WEATHER_CHANNEL_NAME_TEMPLATE.format(channel.channel_id)
         
@@ -92,4 +102,5 @@ class LightManagerAirHumiditySensor(LightManagerAirBaseEntity, SensorEntity):
     @property
     def native_value(self) -> int | None:
         """Return the humidity."""
-        return self.weather_channel.humidity 
+        channel = self._get_weather_channel()
+        return channel.humidity if channel else None 

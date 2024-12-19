@@ -49,7 +49,7 @@ class LightManagerAirRadioEvent(EventEntity):
         )
 
     @callback
-    async def _handle_event(self, event) -> None:
+    def _handle_event(self, event) -> None:
         """Handle the radio signal event."""
         if event.data.get("device_id") != self._attr_device_id:
             return

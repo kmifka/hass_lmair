@@ -6,9 +6,9 @@ from typing import Optional
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 
-from .const import CONF_ENTITY_ID, CONF_MARKER_ID, DOMAIN, CONF_MAPPINGS, CONF_INVERT, Priority, CONF_IGNORED_ZONES
+from .const import CONF_ENTITY_ID, CONF_MARKER_ID, DOMAIN, CONF_MAPPINGS, CONF_INVERT, CONF_IGNORED_ZONES
 from .coordinator import DATA_UPDATE_EVENT
-from .lmair import _LMFixture
+from .lmair import _LMCommandContainer
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class LightManagerAirBaseEntity(ABC):
         ignored_zones = hass.data[DOMAIN].get(CONF_IGNORED_ZONES, [])
         return zone_name in ignored_zones
 
-    def __init__(self, coordinator, unique_id_suffix: str, command_container: _LMFixture, zone_name: Optional[str] = None):
+    def __init__(self, coordinator, unique_id_suffix: str, command_container: _LMCommandContainer, zone_name: Optional[str] = None):
         """Initialize the base entity.
         
         :param coordinator: The coordinator instance
@@ -39,7 +39,7 @@ class LightManagerAirBaseEntity(ABC):
         self._attr_device_id = coordinator.device_id
         self._attr_name = command_container.name
         self._attr_unique_id = f"{self._attr_device_id}_{unique_id_suffix}"
-        self._mapped_marker = None
+        self._mapped_marker_state = None
         self._invert_marker = False
 
         if zone_name:
@@ -56,7 +56,7 @@ class LightManagerAirBaseEntity(ABC):
             # Create device info for main device entity
             self._attr_device_info = coordinator.device_info
 
-    def _setup_marker_mapping(self):
+    def _update_marker_state(self):
         """Setup marker mapping if configured."""
         if not self._coordinator.hass.data[DOMAIN].get(CONF_MAPPINGS):
             return
@@ -67,23 +67,23 @@ class LightManagerAirBaseEntity(ABC):
                 self._invert_marker = mapping.get(CONF_INVERT, False)
                 for marker in self._coordinator.markers:
                     if marker.marker_id == marker_id:
-                        self._mapped_marker = marker
+                        self._mapped_marker_state = marker.state
                         break
                 break
 
     @property
     def is_on(self) -> bool | None:
         """Return if entity is on."""
-        if self._mapped_marker:
-            state = self._mapped_marker.state
+        if self._mapped_marker_state is not None:
+            state = self._mapped_marker_state
             return not state if self._invert_marker else state
         return None
 
     async def async_added_to_hass(self) -> None:
         """Set up the entity when added to hass."""
-        self._setup_marker_mapping()
+        self._update_marker_state()
 
-        self._coordinator.hass.bus.async_listen(
+        self.hass.bus.async_listen(
             DATA_UPDATE_EVENT,
             self._handle_coordinator_update
         )
@@ -94,6 +94,7 @@ class LightManagerAirBaseEntity(ABC):
     def _handle_coordinator_update(self, event):
         """Handle coordinator update event."""
         if event.data.get("device_id") == self._attr_device_id:
+            self._update_marker_state()
             self.async_write_ha_state()
 
     async def _async_call_command(self,
@@ -102,6 +103,7 @@ class LightManagerAirBaseEntity(ABC):
                                   command_index: Optional[int] = None
                                   ) -> None:
         """Call a command by its name or index."""
+        _LOGGER.debug("CALL_COMMAND INDEX:" + str(command_index) + "; NAME: " + str(command_name))
         if command_index is not None:
             try:
                 await hass.async_add_executor_job(
@@ -109,7 +111,6 @@ class LightManagerAirBaseEntity(ABC):
                 )
             except (IndexError, ConnectionError) as e:
                 raise HomeAssistantError(e)
-            return
 
         if command_name:
             for cmd in self._command_container.commands:
@@ -119,6 +120,8 @@ class LightManagerAirBaseEntity(ABC):
                         break
                     except ConnectionError as e:
                         raise HomeAssistantError(e)
+
+        await self._coordinator.async_refresh()
 
 
 class ToggleCommandMixin:
@@ -131,17 +134,11 @@ class ToggleCommandMixin:
     async def async_turn_on(self, **kwargs):
         """Turn the entity on."""
         await self._async_call_command(self.hass, command_index=self.COMMAND_ON)
-        if hasattr(self, '_coordinator'):
-            await self._coordinator.async_refresh()
 
     async def async_turn_off(self, **kwargs):
         """Turn the entity off."""
         await self._async_call_command(self.hass, command_index=self.COMMAND_OFF)
-        if hasattr(self, '_coordinator'):
-            await self._coordinator.async_refresh()
 
     async def async_toggle(self, **kwargs):
         """Toggle the entity."""
         await self._async_call_command(self.hass, command_index=self.COMMAND_TOGGLE)
-        if hasattr(self, '_coordinator'):
-            await self._coordinator.async_refresh()

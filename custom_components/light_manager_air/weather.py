@@ -35,21 +35,34 @@ async def async_setup_entry(
     coordinator: LightManagerAirCoordinator = hass.data[DOMAIN][entry.entry_id]
 
     entities = []
-    weather_channels = coordinator.data.get("weather_channels", [])
-    
-    for channel in weather_channels:
+
+    for channel in coordinator.weather_channels:
         # Only add weather entities for channels with weather_id
         if channel.weather_id:
             entities.append(LightManagerAirWeather(coordinator, channel))
     
     async_add_entities(entities)
 
-class LightManagerAirWeather(LightManagerAirBaseEntity, WeatherEntity):
+class WeatherChannelMixin:
+    """Mixin to handle weather channel access."""
+
+    def _get_weather_channel(self):
+        """Get the weather channel for this entity.
+
+        Returns:
+            The weather channel object or None if not found.
+        """
+        for channel in self._coordinator.weather_channels:
+            if channel.channel_id == self.weather_channel_id:
+                return channel
+        return None
+
+class LightManagerAirWeather(LightManagerAirBaseEntity, WeatherChannelMixin, WeatherEntity):
     """Representation of a Light Manager Air weather entity."""
 
     def __init__(self, coordinator: LightManagerAirCoordinator, channel) -> None:
         """Initialize the weather entity."""
-        self.weather_channel = channel
+        self.weather_channel_id = channel.channel_id
 
         super().__init__(
             coordinator=coordinator,
@@ -67,24 +80,29 @@ class LightManagerAirWeather(LightManagerAirBaseEntity, WeatherEntity):
     @property
     def native_temperature(self) -> float | None:
         """Return the current temperature."""
-        return self.weather_channel.temperature
+        channel = self._get_weather_channel()
+        return channel.temperature if channel else None
 
     @property
     def humidity(self) -> int | None:
         """Return the current humidity."""
-        return self.weather_channel.humidity
+        channel = self._get_weather_channel()
+        return channel.humidity if channel else None
 
     @property
     def native_wind_speed(self) -> float | None:
         """Return the current wind speed."""
-        return self.weather_channel.wind_speed
+        channel = self._get_weather_channel()
+        return channel.wind_speed if channel else None
 
     @property
     def wind_bearing(self) -> float | None:
         """Return the current wind bearing in degrees."""
-        return self.weather_channel.wind_direction
+        channel = self._get_weather_channel()
+        return channel.wind_direction if channel else None
 
     @property
     def native_precipitation(self) -> float | None:
         """Return the current precipitation amount in mm."""
-        return self.weather_channel.rain
+        channel = self._get_weather_channel()
+        return channel.rain if channel else None
