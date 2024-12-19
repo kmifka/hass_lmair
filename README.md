@@ -60,6 +60,12 @@ This integration bridges jb media's Light Manager Air with Home Assistant, unloc
 
 ---
 
+## Important Notes on Unique Zone and Actuator Names
+
+It is crucial that each combination of zone and actuator name in the Light Manager is unique, as these are used to generate entities in Home Assistant. If the names are not unique, only the first occurrence will be added to Home Assistant, and all subsequent entities will be skipped. Changes to zones or actuators in the Light Manager will result in duplicate or new entries in Home Assistant.
+
+---
+
 ## Configuration
 
 ### Polling Settings
@@ -77,6 +83,19 @@ You can customize these intervals to suit your needs or disable polling entirely
 3. Set your desired intervals or disable polling by uncheck the checkbox.
 
 ⚠️ **Warning**: Short intervals improve response times but may impact performance. Use default settings as a starting point and adjust based on your system's capabilities.
+
+### Using Radio Bus Events for Automations
+
+The Light Manager Air can receive radio bus events, which can be used to trigger automations in Home Assistant. The default entity ID for radio signals is `event.radio_signal`. Automations can be configured by checking if the radio signal changes to a desired value. For example, you can set up a trigger in Home Assistant that listens for changes in the `signal_code` attribute of the `event.radio_signal` entity:
+
+```yaml
+triggers:
+  - trigger: state
+    entity_id:
+      - event.radio_signal
+    attribute: signal_code
+    to: rfit_14734E8A
+```
 
 ### Marker Mapping
 
@@ -124,19 +143,3 @@ light_manager_air:
       actuator_name: "Ceiling Light"
       target_type: "switch"
 ```
-
-### Using Radio Bus Events for Automations
-
-The Light Manager Air can receive radio bus events, which can be used to trigger automations in Home Assistant. The default entity ID for radio signals is `event.radio_signal`. Automations can be configured by checking if the radio signal changes to a desired value. For example, you can set up a trigger in Home Assistant that listens for changes in the `signal_code` attribute of the `event.radio_signal` entity:
-
-```yaml
-- Triggers:
-  - Trigger: state
-    Entity ID: event.radio_signal
-    Attribute: signal_code
-    To: rfit_14734E8A
-```
-
-### Important Notes on Unique Zone and Actuator Names
-
-It is crucial that each combination of zone and actuator name in the Light Manager is unique, as these are used to generate entities in Home Assistant. Changes to zones or actuators in the Light Manager will result in duplicate or new entries in Home Assistant. Therefore, ensure that each zone-actuator combination in the Light Manager has a clear and distinctive name to avoid accidental creation and duplication of entities.
