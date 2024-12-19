@@ -67,11 +67,6 @@ class LightManagerAirTemperatureSensor(LightManagerAirBaseEntity, WeatherChannel
         
         self._attr_name = name_suffix
 
-    @callback
-    def _handle_coordinator_update(self, event):
-        _LOGGER.debug("UPDATE SENSOR: "  + str(self._get_weather_channel().temperature))
-        super()._handle_coordinator_update(event)
-
     @property
     def native_value(self) -> float | None:
         """Return the temperature."""

@@ -126,8 +126,6 @@ class _LMConnector:
 
         timeout = 3 or (timeout or _LMConnector.DEFAULT_TIMEOUT) / 1000
 
-        _LOGGER.debug("SEND" + self._lm_url + path + "; DATA: " + str(cmd))
-
         try:
             if not cmd:
                 response = requests.get(self._lm_url + path, auth=auth, timeout=timeout)
