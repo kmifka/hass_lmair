@@ -103,7 +103,6 @@ class LightManagerAirBaseEntity(ABC):
                                   command_index: Optional[int] = None
                                   ) -> None:
         """Call a command by its name or index."""
-        _LOGGER.debug("CALL_COMMAND INDEX:" + str(command_index) + "; NAME: " + str(command_name))
         if command_index is not None:
             try:
                 await hass.async_add_executor_job(

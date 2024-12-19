@@ -46,7 +46,6 @@ class UpdateHandler:
         """Handle the update."""
         if self._coordinator.light_manager:
             try:
-                _LOGGER.debug("UPDATE " + self._update_type)
                 # Dynamically call the corresponding method
                 update_method = getattr(self._coordinator.light_manager, f"load_{self._update_type}")
                 result = await self._hass.async_add_executor_job(update_method)
@@ -66,15 +65,12 @@ class UpdateHandler:
                     })
 
             except ConnectionError:
-                _LOGGER.debug("ERROR " + self._update_type)
                 pass
 
     def start(self, update_interval=None):
         """Start periodic updates."""
         if self._unsubscribe:
             return
-
-        _LOGGER.debug("START " + self._update_type)
 
         update_interval = update_interval or self._default_interval
 

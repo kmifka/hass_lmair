@@ -17,15 +17,17 @@ from .coordinator import LightManagerAirCoordinator, RADIO_BUS_SIGNAL_EVENT
 
 _LOGGER = logging.getLogger(__name__)
 
+
 async def async_setup_entry(
-    hass: HomeAssistant,
-    entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+        hass: HomeAssistant,
+        entry: ConfigEntry,
+        async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Light Manager Air event entities."""
     coordinator: LightManagerAirCoordinator = hass.data[DOMAIN][entry.entry_id]
-    
+
     async_add_entities([LightManagerAirRadioEvent(coordinator)])
+
 
 class LightManagerAirRadioEvent(EventEntity):
     """Representation of a Light Manager Air radio event."""
@@ -56,9 +58,6 @@ class LightManagerAirRadioEvent(EventEntity):
 
         self._trigger_event(
             "radio_signal",
-            {
-                "signal_type": event.data.get("signal_type"),
-                "signal_code": event.data.get("signal_code")
-            }
+            {"signal_code": event.data.get("signal_type") + "_" + event.data.get("signal_code")}
         )
         self.async_write_ha_state()
