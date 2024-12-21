@@ -139,11 +139,6 @@ class LightManagerAirCover(LightManagerAirBaseEntity, ToggleCommandMixin, CoverE
         return not super().is_on
 
     @property
-    def assumed_state(self):
-        """Return True because covers can be stopped midway."""
-        return bool(self._tc)
-
-    @property
     def current_cover_position(self) -> Optional[int]:
         """Return current position of cover in percent."""
         if self._tc:
