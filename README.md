@@ -122,14 +122,17 @@ To ensure markers are updated when an actuator is operated, configure the Light 
 
 ### Ignored Zones
 
-You can configure zones to be ignored by adding them to your `configuration.yaml` file:
+You can configure zones and scenes to be ignored by adding them to your `configuration.yaml` file. To ignore all scenes, simply add "Scenes" to the ignored zones list:
 
 ```yaml
 light_manager_air:
   ignored_zones:
   - "Living Room"
   - "Garage"
+  - "Scenes"
 ```
+
+By adding "Scenes" to the `ignored_zones` list, all scenes will be ignored and not added to Home Assistant.
 
 ### Entity Type Conversion
 

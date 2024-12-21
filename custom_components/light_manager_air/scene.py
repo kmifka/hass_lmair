@@ -5,7 +5,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
+from .base_entity import LightManagerAirBaseEntity
+from .const import DOMAIN, CONF_IGNORED_SCENE_ZONE
 from .coordinator import LightManagerAirCoordinator
 
 
@@ -17,11 +18,12 @@ async def async_setup_entry(
     """Set up Light Manager Air scenes."""
     coordinator: LightManagerAirCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    scenes = []
-    for scene in coordinator.scenes:
-        scenes.append(LightManagerAirScene(coordinator, scene))
+    if not LightManagerAirBaseEntity.is_zone_ignored(CONF_IGNORED_SCENE_ZONE, hass):
+        scenes = []
+        for scene in coordinator.scenes:
+            scenes.append(LightManagerAirScene(coordinator, scene))
 
-    async_add_entities(scenes)
+        async_add_entities(scenes)
 
 class LightManagerAirScene(Scene):
     """Representation of a Light Manager Air scene."""

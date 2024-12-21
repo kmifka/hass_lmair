@@ -26,6 +26,7 @@ CONF_ENTITY_ID = "entity_id"
 CONF_HIDE_MARKER = "hide_marker"
 CONF_INVERT = "invert"
 CONF_IGNORED_ZONES = "ignored_zones"
+CONF_IGNORED_SCENE_ZONE = "Scenes"
 
 DEFAULT_NAME = "Light Manager Air"
 
