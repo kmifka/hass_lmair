@@ -4,16 +4,17 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+import homeassistant
 from homeassistant.components.event import (
     EventEntity,
     EventDeviceClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant, callback, Context
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .coordinator import LightManagerAirCoordinator, RADIO_BUS_SIGNAL_EVENT
+from .coordinator import LightManagerAirCoordinator, RADIO_SIGNAL_EVENT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -42,22 +43,29 @@ class LightManagerAirRadioEvent(EventEntity):
         self._coordinator = coordinator
         self._attr_device_id = coordinator.device_id
         self._attr_unique_id = f"{coordinator.device_id}_radio_event"
+        self._signal_data = None
 
     async def async_added_to_hass(self) -> None:
         """Register callbacks."""
         self.hass.bus.async_listen(
-            RADIO_BUS_SIGNAL_EVENT,
+            RADIO_SIGNAL_EVENT,
             self._handle_event
         )
+
+    @property
+    def state(self) -> str | None:
+        """Return the state of the entity."""
+        if self._signal_data:
+            return self._signal_data.get("code")
 
     @callback
     def _handle_event(self, event) -> None:
         """Handle the radio signal event."""
-        if event.data.get("device_id") != self._attr_device_id:
-            return
+        self._signal_data = event.data
 
         self._trigger_event(
-            "radio_signal",
-            {"signal_code": event.data.get("signal_type") + "_" + event.data.get("signal_code")}
+            RADIO_SIGNAL_EVENT,
+            self._signal_data
         )
+
         self.async_write_ha_state()

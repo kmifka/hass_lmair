@@ -86,15 +86,14 @@ You can customize these intervals to suit your needs or disable polling entirely
 
 ### Using Radio Bus Events for Automations
 
-The Light Manager Air can receive radio bus events, which can be used to trigger automations in Home Assistant. The default entity ID for radio signals is `event.radio_signal`. Automations can be configured by checking if the radio signal changes to a desired value. For example, you can set up a trigger in Home Assistant that listens for changes in the `signal_code` attribute of the `event.radio_signal` entity:
+The Light Manager Air can receive radio bus events, which can be used to trigger automations in Home Assistant. The default entity ID for radio signals is `event.radio_signal`. Automations can be configured to listen for specific radio signals by using the event trigger. For example, you can set up a trigger in Home Assistant that listens for the `radio_signal` event with a specific code:
 
 ```yaml
 triggers:
-  - trigger: state
-    entity_id:
-      - event.radio_signal
-    attribute: signal_code
-    to: rfit_14734E8A
+  - trigger: event
+    event_type: radio_signal
+    event_data:
+      code: rfit_14734E8A
 ```
 
 ### Marker Mapping

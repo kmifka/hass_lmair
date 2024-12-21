@@ -27,7 +27,7 @@ from .lmair import LMAir
 _LOGGER = logging.getLogger(__name__)
 
 
-RADIO_BUS_SIGNAL_EVENT = f"{DOMAIN}_radio_bus_signal"
+RADIO_SIGNAL_EVENT = f"radio_signal"
 DATA_UPDATE_EVENT = f"{DOMAIN}_data_update"
 
 
@@ -53,10 +53,8 @@ class UpdateHandler:
                 # Special handling for Radio Bus signals
                 if self._update_type == "radio_signals":
                     for signal in result:
-                        self._hass.bus.async_fire(RADIO_BUS_SIGNAL_EVENT, {
-                            "device_id": self._coordinator.device_id,
-                            "signal_type": signal.get("signal_type"),
-                            "signal_code": signal.get("signal_code")
+                        self._hass.bus.async_fire(RADIO_SIGNAL_EVENT, {
+                            "code": signal.get("signal_type") + "_" + signal.get("signal_code")
                         })
                 else:
                     setattr(self._coordinator, self._update_type, result)
