@@ -16,6 +16,7 @@ A Home Assistant custom integration for the jbmedia's Light Manager Air.
 - **Radio reception**: Receive 433 MHz and 868 MHz radio signals
 - **Marker status updates**: Read an control markers as a switch in Home Assistant
 - **Weather data**: Integration of connected weather channels
+- **Cover Positioning**: Configure covers to display and set their current position based on opening and closing times.
 - **Marker mapping**: Use markers as state proxies for stateless devices.
 - **Ignore Zones**: Configure zones to be ignored in Home Assistant
 - **Entity Type Conversion**: Convert entities to different types (e.g., light to switch)
@@ -95,6 +96,22 @@ triggers:
     event_data:
       code: rfit_14734E8A
 ```
+
+### Cover Timings
+
+You can now configure covers to display their current position and set positions based on opening and closing times. To do this, add the following configuration to your `configuration.yaml` file:
+
+```yaml
+light_manager_air:
+  cover_timings:
+    - entity_id: "cover.jalousie"
+      travel_up_time: 35.0  # Seconds for full opening
+      travel_down_time: 32.0 # Seconds for full closing (optional)
+      custom_stop_logic: true
+```
+
+
+The `custom_stop_logic` option means that the last sent command will be repeatedly sent to stop the actuator. This is particularly useful for actuators that do not have a native stop command or for those where the stop command does not work reliably.
 
 ### Marker Mapping
 

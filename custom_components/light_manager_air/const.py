@@ -130,11 +130,25 @@ CONVERSION_SCHEMA = vol.Schema({
 CONF_ENABLE_RADIO_BUS = "enable_radio_bus"
 CONF_RADIO_POLLING_INTERVAL = "polling_interval"
 
-# Schema for the Mapping
+# Schema for the mapping
 MAPPING_SCHEMA = vol.Schema({
     vol.Required(CONF_MARKER_ID): int,
     vol.Required(CONF_ENTITY_ID): str,
     vol.Optional(CONF_INVERT, default=False): bool,
+})
+
+# Cover timing configuration
+CONF_COVER_TIMINGS = "cover_timings"
+CONF_TRAVEL_UP_TIME = "travel_up_time"
+CONF_TRAVEL_DOWN_TIME = "travel_down_time"
+CONF_CUSTOM_STOP_LOGIC = "custom_stop_logic"
+
+# Schema for cover-timing
+COVER_TIMING_SCHEMA = vol.Schema({
+    vol.Required(CONF_ENTITY_ID): str,
+    vol.Required(CONF_TRAVEL_UP_TIME): vol.Coerce(float),
+    vol.Optional(CONF_TRAVEL_DOWN_TIME): vol.Coerce(float),
+    vol.Optional(CONF_CUSTOM_STOP_LOGIC): vol.Coerce(bool),
 })
 
 CONF_ENABLE_MARKER_UPDATES = "enable_marker_updates"
@@ -150,3 +164,7 @@ class Priority(Enum):
     POLLING = 2
 
 MINIMUM_FIRMWARE_VERSION = "11.1"
+
+# Storage constants
+STORAGE_VERSION = 1
+STORAGE_KEY_COVER_POSITIONS = "cover_positions"

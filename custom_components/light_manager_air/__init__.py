@@ -9,7 +9,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 
-from .const import DOMAIN, MAPPING_SCHEMA, CONF_MAPPINGS, CONF_ENTITY_CONVERSIONS, CONVERSION_SCHEMA, CONF_IGNORED_ZONES
+from .const import DOMAIN, MAPPING_SCHEMA, CONF_MAPPINGS, CONF_ENTITY_CONVERSIONS, CONVERSION_SCHEMA, CONF_IGNORED_ZONES, CONF_COVER_TIMINGS, COVER_TIMING_SCHEMA
 from .coordinator import LightManagerAirCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -27,6 +27,9 @@ CONFIG_SCHEMA = vol.Schema(
                 cv.ensure_list, [CONVERSION_SCHEMA]
             ),
             vol.Optional(CONF_IGNORED_ZONES, default=[]): vol.All(cv.ensure_list, [cv.string]),
+            vol.Optional(CONF_COVER_TIMINGS): vol.All(
+                cv.ensure_list, [COVER_TIMING_SCHEMA]
+            ),
         })
     },
     extra=vol.ALLOW_EXTRA,
@@ -45,6 +48,8 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
         hass.data[DOMAIN][CONF_ENTITY_CONVERSIONS] = config[DOMAIN][CONF_ENTITY_CONVERSIONS]
     if CONF_IGNORED_ZONES in config[DOMAIN]:
         hass.data[DOMAIN][CONF_IGNORED_ZONES] = config[DOMAIN][CONF_IGNORED_ZONES]
+    if CONF_COVER_TIMINGS in config[DOMAIN]:
+        hass.data[DOMAIN][CONF_COVER_TIMINGS] = config[DOMAIN][CONF_COVER_TIMINGS]
 
     return True
 
