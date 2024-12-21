@@ -98,13 +98,12 @@ triggers:
 
 ### Marker Mapping
 
-Markers can be used to reflect and **set the states** of stateless actuators (e.g., lights, blinds) via the Light Manager Air. This is especially useful for:
+Markers can be used to map the states of actuators, which are by default stateless in the Light Manager Air. 
 
-- Providing feedback for automations
-- Status visualization within the Light Manager
-- Triggering and managing scenes
+To ensure markers are updated when an actuator is operated, you need to configure the Light Manager in AirStudio. In the actuator management section of AirStudio, select the mapped marker in the "Marker | Sensor" column.
 
 To configure marker mappings, add the following to your `configuration.yaml` file:
+
 ```yaml
 light_manager_air:
   marker_mappings:
@@ -116,13 +115,12 @@ light_manager_air:
       entity_id: "light.dining_room"
     - marker_id: 30
       entity_id: "light.fountain_pump"
+      invert: true
 ```
-
-To ensure markers are updated when an actuator is operated, configure the Light Manager in AirStudio. In the actuator management section, select the mapped marker in the "Marker | Sensor" column.
 
 ### Ignored Zones
 
-You can configure zones and scenes to be ignored by adding them to your `configuration.yaml` file. To ignore all scenes, simply add "Scenes" to the ignored zones list:
+You can configure zones to be ignored by adding them to your `configuration.yaml` file:
 
 ```yaml
 light_manager_air:
