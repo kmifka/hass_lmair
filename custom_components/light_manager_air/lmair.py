@@ -251,11 +251,13 @@ class LMCommand(_LMFixture):
         """
         super().__init__(name or config.findtext("./name"))
         self._connector = connector
-        self._cmd = [
-            (_LMConnector.COMMAND_KEY, cmd or
-             config.findtext("./param")
-             .replace("scene=0&scene=", "idx,")) # replace old command with new scene command
-        ]
+        if cmd is not None:
+            self._cmd = (_LMConnector.COMMAND_KEY, cmd)
+        else:
+            self._cmd = config.findtext("./param")
+            # replace old command with new scene command
+            self._cmd = self._cmd.replace("scene=0&scene=", "cmd=idx,")
+            self._cmd = parse_qsl(self._cmd)
 
     @property
     def name(self) -> str:
