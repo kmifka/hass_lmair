@@ -47,16 +47,16 @@ class LightManagerAirMarkerSwitch(LightManagerAirBaseEntity, ToggleCommandMixin,
         super().__init__(
             coordinator=coordinator,
             command_container=marker,
-            unique_id_suffix=f"marker_{marker.marker_id}"
+            unique_id_suffix=f"marker_{marker.id}"
         )
-        self._marker_id = marker.marker_id
+        self._marker_id = marker.id
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def is_on(self) -> bool:
         """Return true if the marker is on."""
         for marker in self._coordinator.markers:
-            if marker.marker_id == self._marker_id:
+            if marker.id == self._marker_id:
                 return marker.state
         return False
 

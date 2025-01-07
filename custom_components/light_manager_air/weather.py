@@ -53,7 +53,7 @@ class WeatherChannelMixin:
             The weather channel object or None if not found.
         """
         for channel in self._coordinator.weather_channels:
-            if channel.channel_id == self.weather_channel_id:
+            if channel.id == self.weather_channel_id:
                 return channel
         return None
 
@@ -62,15 +62,15 @@ class LightManagerAirWeather(LightManagerAirBaseEntity, WeatherChannelMixin, Wea
 
     def __init__(self, coordinator: LightManagerAirCoordinator, channel) -> None:
         """Initialize the weather entity."""
-        self.weather_channel_id = channel.channel_id
+        self.weather_channel_id = channel.id
 
         super().__init__(
             coordinator=coordinator,
             command_container=channel,
-            unique_id_suffix=f"weather_{channel.channel_id}"
+            unique_id_suffix=f"weather_{channel.id}"
         )
 
-        self._attr_name = WEATHER_CHANNEL_NAME_TEMPLATE.format(channel.channel_id)
+        self._attr_name = WEATHER_CHANNEL_NAME_TEMPLATE.format(channel.id)
         self._attr_native_temperature_unit = UnitOfTemperature.CELSIUS
         self._attr_native_pressure_unit = UnitOfPressure.HPA
         self._attr_native_wind_speed_unit = UnitOfSpeed.KILOMETERS_PER_HOUR

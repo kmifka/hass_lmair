@@ -55,14 +55,14 @@ class LightManagerAirTemperatureSensor(LightManagerAirBaseEntity, WeatherChannel
 
     def __init__(self, coordinator: LightManagerAirCoordinator, channel) -> None:
         """Initialize the sensor."""
-        self.weather_channel_id = channel.channel_id
+        self.weather_channel_id = channel.id
         
-        name_suffix = WEATHER_CHANNEL_NAME_TEMPLATE.format(channel.channel_id)
+        name_suffix = WEATHER_CHANNEL_NAME_TEMPLATE.format(channel.id)
         
         super().__init__(
             coordinator=coordinator,
             command_container=channel,
-            unique_id_suffix=f"temperature_{channel.channel_id}"
+            unique_id_suffix=f"temperature_{channel.id}"
         )
         
         self._attr_name = name_suffix
@@ -82,14 +82,14 @@ class LightManagerAirHumiditySensor(LightManagerAirBaseEntity, WeatherChannelMix
 
     def __init__(self, coordinator: LightManagerAirCoordinator, channel) -> None:
         """Initialize the sensor."""
-        self.weather_channel_id = channel.channel_id
+        self.weather_channel_id = channel.id
         
-        name_suffix = WEATHER_CHANNEL_NAME_TEMPLATE.format(channel.channel_id)
+        name_suffix = WEATHER_CHANNEL_NAME_TEMPLATE.format(channel.id)
         
         super().__init__(
             coordinator=coordinator,
             command_container=channel,
-            unique_id_suffix=f"humidity_{channel.channel_id}"
+            unique_id_suffix=f"humidity_{channel.id}"
         )
         
         self._attr_name = name_suffix

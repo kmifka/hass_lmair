@@ -66,7 +66,7 @@ class LightManagerAirBaseEntity(ABC):
                 marker_id = mapping[CONF_MARKER_ID] - 1
                 self._invert_marker = mapping.get(CONF_INVERT, False)
                 for marker in self._coordinator.markers:
-                    if marker.marker_id == marker_id:
+                    if marker.id == marker_id:
                         self._mapped_marker_state = marker.state
                         break
                 break

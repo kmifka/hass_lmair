@@ -31,6 +31,7 @@ class _LMConnector:
         :param adapter_ip: IP of the desired network adapter
         """
         self._lm_url = url
+        self._marker_states = None
         self._adapter_ip: str = adapter_ip or self._get_default_adapter_ip()
         self._username: str = username
         self._password: str = password
@@ -198,11 +199,19 @@ class _LMConnector:
 class _LMFixture:
     """Base class for all Light Manager fixtures."""
 
-    def __init__(self, name: str):
+    def __init__(self, fixture_id: Optional[str], name: str):
         """
         :param name: Name of the fixture.
         """
+        self._id = fixture_id
         self._name = name
+
+    @property
+    def id(self):
+        """
+        :return: Name of the fixture.
+        """
+        return self._id
 
     @property
     def name(self):
@@ -218,13 +227,13 @@ class _LMFixture:
 class _LMCommandContainer(_LMFixture):
     """Base class for objects that contain commands."""
 
-    def __init__(self, name: str, connector: _LMConnector):
+    def __init__(self, container_id: Optional[str], name: str, connector: _LMConnector):
         """Initialize the command container.
         
         :param name: Name of the container
         :param connector: Light Manager connector
         """
-        super().__init__(name)
+        super().__init__(container_id, name)
         self._connector = connector
         self._commands: List[LMCommand] = []
 
@@ -249,15 +258,19 @@ class LMCommand(_LMFixture):
         :param cmd: Command of the command as tuple or string (e.g., [("cmd", "typ,it,did,0996,aid,215,acmd,0,seq,6")]).
         :param config: Command part of the config.xml (Optional. Only if name and param are None).
         """
-        super().__init__(name or config.findtext("./name"))
+        command_id = ""
         self._connector = connector
         if cmd is not None:
             self._cmd = (_LMConnector.COMMAND_KEY, cmd)
         else:
             self._cmd = config.findtext("./param")
+            if "=" in self._cmd:
+                command_id = self._cmd.rsplit("=", 1)[1]
             # replace old command with new scene command
             self._cmd = self._cmd.replace("scene=0&scene=", "cmd=idx,")
             self._cmd = parse_qsl(self._cmd)
+
+        super().__init__(command_id, name or config.findtext("./name"))
 
     @property
     def name(self) -> str:
@@ -288,12 +301,14 @@ class LMActuator(_LMCommandContainer):
         :param config: Actuator part of the config.xml.
         :param connector: Light Manager connector.
         """
-        super().__init__(config.findtext("./name"), connector)
         self._type = config.findtext("./type")
         self._commands = [LMCommand(connector, config=command) for command in config.findall("./commandlist/command")]
+        actuator_id = self._commands[0].id if self._commands else None
+
+        super().__init__(actuator_id, config.findtext("./name"), connector)
 
     @property
-    def type(self) -> str:
+    def actuator_type(self) -> str:
         """
         :return: Type of the actuator.
         """
@@ -303,26 +318,18 @@ class LMActuator(_LMCommandContainer):
 class LMMarker(_LMCommandContainer):
     """Describes a marker."""
 
-    def __init__(self, marker_id: int, state: bool, connector: _LMConnector):
+    def __init__(self, container_id: int, state: bool, connector: _LMConnector):
         """
-        :param marker_id: ID of the marker
+        :param container_id: ID of the marker
         :param connector: Light Manager connector
         """
-        super().__init__(f"Marker {marker_id + 1}", connector)
-        self._marker_id = marker_id
+        super().__init__(str(container_id), f"Marker {container_id + 1}", connector)
         self._state = state
         self._commands = [
-            LMCommand(connector, "on", f"typ,smk,{marker_id},1"),
-            LMCommand(connector, "toggle", f"typ,smk,{marker_id},2"),
-            LMCommand(connector, "off", f"typ,smk,{marker_id},0"),
+            LMCommand(connector, "on", f"typ,smk,{container_id},1"),
+            LMCommand(connector, "toggle", f"typ,smk,{container_id},2"),
+            LMCommand(connector, "off", f"typ,smk,{container_id},0"),
         ]
-
-    @property
-    def marker_id(self) -> int:
-        """
-        :return: ID of the marker.
-        """
-        return self._marker_id
 
     @property
     def state(self) -> bool:
@@ -335,13 +342,12 @@ class LMMarker(_LMCommandContainer):
 class LMWeatherChannel(_LMFixture):
     """Describes a weather channel."""
 
-    def __init__(self, channel_id: int, data: dict):
+    def __init__(self, channel_id: str, data: dict):
         """
         :param channel_id: ID of the channel
         :param data: Weather data for this channel
         """
-        super().__init__(f"Weather Channel {channel_id}")
-        self._channel_id = channel_id
+        super().__init__(channel_id, f"Weather Channel {channel_id}")
         self._temperature = data.get("temperature")
         self._humidity = data.get("humidity")
         self._wind_speed = data.get("wind")
@@ -349,11 +355,6 @@ class LMWeatherChannel(_LMFixture):
         self._rain = data.get("rain")
         self._weather_id = data.get("weather id")
         self._weather_id = int(self._weather_id) if self._weather_id else None
-
-    @property
-    def channel_id(self) -> int:
-        """Return the channel ID."""
-        return self._channel_id
 
     @property
     def temperature(self) -> Optional[float]:
@@ -429,7 +430,6 @@ class LMAir(_LMFixture):
         :param password: Optional. LAN password.
         :param adapter_ip: Optional. IP of the network adapter connected to Light Manager.
         """
-        super().__init__("Light Manager Air")
 
         if not url:
             raise ValueError("URL must be given.")
@@ -451,6 +451,8 @@ class LMAir(_LMFixture):
         self._mac_address = params["mac addr"]
         self._fw_version = params["firmware ver"]
         self._ssid = params["ssid"]
+
+        super().__init__(self._mac_address, "Light Manager Air")
 
     @property
     def username(self):
@@ -556,7 +558,7 @@ class LMAir(_LMFixture):
             for i, state in enumerate(marker_states):
                 if state in ["0", "1"]:  # Ignore invalid states
                     markers.append(LMMarker(
-                        marker_id=i,
+                        _id=i,
                         state=state == "1",
                         connector=self._connector
                     ))
@@ -578,7 +580,7 @@ class LMAir(_LMFixture):
             channel_data = weather_data[channel_key]
             # Only add channels that have a non-empty temperature value
             if channel_data.get("temperature") and channel_data["temperature"].strip():
-                channel_id = int(channel_key.replace("channel", ""))
+                channel_id = channel_key.replace("channel", "")
                 channels.append(LMWeatherChannel(channel_id, channel_data))
 
         return channels
