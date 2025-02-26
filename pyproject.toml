@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "light-manager-air"
-version = "1.0.0"
+version = "1.2.2"
 description = "Home Assistant custom integration for the Light Manager Air by jb media."
 readme = "README.md"
 authors = [{ name = "Korbinian Mifka", email = "info@korbinian-mifka.com" }]

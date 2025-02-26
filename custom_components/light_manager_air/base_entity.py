@@ -38,6 +38,7 @@ class LightManagerAirBaseEntity(ABC):
         self._zone_name = zone_name
         self._attr_device_id = coordinator.device_id
         self._attr_name = command_container.name
+        # Keep existing unique_id format to maintain backward compatibility with automations
         self._attr_unique_id = f"{self._attr_device_id}_{unique_id_suffix}"
         self._mapped_marker_state = None
         self._invert_marker = False
@@ -45,9 +46,13 @@ class LightManagerAirBaseEntity(ABC):
         if zone_name:
             # Create device info for zoned entity
             self._attr_device_info = {
-                "identifiers": {(DOMAIN, f"{self._attr_device_id}_{zone_name}")},
+                # Include both old and new style identifiers for smooth migration
+                "identifiers": {
+                    (DOMAIN, f"{coordinator.light_manager.mac_address}_{zone_name}"),
+                    (DOMAIN, f"{self._attr_device_id}_{zone_name}")
+                },
                 "name": zone_name,
-                "via_device": (DOMAIN, self._attr_device_id),
+                "via_device": (DOMAIN, coordinator.light_manager.mac_address),
                 "model": "Zone",
                 "sw_version": coordinator.light_manager.fw_version,
                 "suggested_area": self._zone_name
