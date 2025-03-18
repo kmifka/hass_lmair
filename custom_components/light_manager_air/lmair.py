@@ -277,7 +277,13 @@ class LMCommand(_LMFixture):
         """
         Starts the command on the Light Manager.
         """
-        self._connector.send("/control", cmd=self.cmd, retry=True)
+        # Convert the cmd parameter to a dict if it's a tuple
+        if isinstance(self._cmd, tuple):
+            cmd_dict = {self._cmd[0]: self._cmd[1]}
+        else:
+            cmd_dict = dict(self._cmd)
+        
+        self._connector.send("/control", cmd=cmd_dict, retry=True)
 
 
 class LMActuator(_LMCommandContainer):
