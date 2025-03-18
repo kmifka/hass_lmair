@@ -10,13 +10,20 @@
             }
         },
         "error": {
-            "cannot_connect": "Failed to connect",
+            "cannot_connect": "Failed to connect to the Light Manager Air device",
             "invalid_auth": "Invalid authentication",
             "unknown": "Unexpected error",
-            "firmware_too_old": "Firmware version is too old. Please update to the latest version."
+            "firmware_too_old": "Firmware version is too old. Please update to the latest version.",
+            "firmware_unavailable": "Could not determine firmware version",
+            "mac_unavailable": "Could not determine MAC address",
+            "invalid_host": "Please provide a valid hostname or IP address",
+            "entry_error": "Error creating configuration entry",
+            "form_error": "Error displaying configuration form"
         },
         "abort": {
-            "already_configured": "Device is already configured"
+            "already_configured": "Device is already configured",
+            "form_error": "Error displaying configuration form",
+            "options_error": "Error in options configuration"
         }
     },
     "options": {
