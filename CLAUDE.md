@@ -1,5 +1,12 @@
 # Light Manager Air Integration Guidelines
 
+## Commit Guidelines
+
+- Do NOT include "Generated with Claude Code" or similar notes in commit messages
+- Commit messages should be clear, concise, and descriptive
+- Use the imperative mood in commit messages (e.g., "Add feature" not "Added feature")
+- No need for co-author attribution to Claude
+
 ## Code Style Guidelines
 
 ### General Principles
