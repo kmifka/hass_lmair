@@ -136,7 +136,13 @@ class LightManagerAirCover(LightManagerAirBaseEntity, ToggleCommandMixin, CoverE
         """Return if the cover is closed."""
         if self._tc:
             return self._tc.is_closed()
-        return not super().is_on
+        
+        # Get state from parent class (marker mapping)
+        is_on = super().is_on
+        
+        # If is_on is None (no marker mapping), return None (unknown state)
+        # Otherwise, convert the boolean state (True = open, False = closed)
+        return None if is_on is None else not is_on
 
     @property
     def current_cover_position(self) -> Optional[int]:
