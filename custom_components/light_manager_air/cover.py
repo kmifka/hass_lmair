@@ -117,7 +117,9 @@ class LightManagerAirCover(LightManagerAirBaseEntity, ToggleCommandMixin, CoverE
 
         # Default logic for native covers
         command_names = {cmd.name.lower() for cmd in actuator.commands}
-        return {"up", "down", "stop"}.issubset(command_names)
+        # Check for basic up/down and either stop or my command for rts-somfy
+        return {"up", "down"}.issubset(command_names) and (
+            "stop" in command_names or "my" in command_names)
 
     @property
     def is_opening(self):
@@ -218,16 +220,28 @@ class LightManagerAirCover(LightManagerAirBaseEntity, ToggleCommandMixin, CoverE
             if self._is_converted:
                 return  # No stop function available
 
-            await self._send_command("stop")
+            # Try "stop" and "my" commands (for Somfy RTS)
+            await self._send_command(["stop", "my"])
 
     async def _send_command(self, command):
-        for cmd in self._actuator.commands:
-            if cmd.name.lower() == command.lower():
-                try:
-                    await self.hass.async_add_executor_job(cmd.call)
-                    break
-                except ConnectionError as e:
-                    raise HomeAssistantError(e)
+        """Send command to the actuator.
+        
+        Args:
+            command: String command name or list of command names to try
+        """
+        commands = [command] if isinstance(command, str) else command
+        
+        for cmd_name in commands:
+            for cmd in self._actuator.commands:
+                if cmd.name.lower() == cmd_name.lower():
+                    try:
+                        await self.hass.async_add_executor_job(cmd.call)
+                        return  # Command found and executed, exit function
+                    except ConnectionError as e:
+                        raise HomeAssistantError(e)
+                        
+        # If we get here, none of the commands were found
+        raise HomeAssistantError(f"None of the commands {commands} found for actuator {self._actuator.name}")
 
     def _start_auto_updater(self):
         """Start interval that periodically updates the position."""
