@@ -6,6 +6,6 @@
   "issue_tracker": "https://github.com/USERNAME/light_manager_air/issues",
   "dependencies": [],
   "after_dependencies": [],
-  "codeowners": ["@USERNAME"],
+  "codeowners": ["@kmifka"],
   "homeassistant": "2024.1.0"
 } 

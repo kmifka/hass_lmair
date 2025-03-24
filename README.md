@@ -54,7 +54,7 @@ This integration bridges jb media's Light Manager Air with Home Assistant, unloc
    - Click **Install** to download and install the integration.
 
 4. **Restart Home Assistant**
-   Restart Home Assistant to apply changes.
+   to apply changes.
 
 5. **Add the integration via the UI**:
    Go to **Settings** → **Devices & Services** → **Add Integration** and search for "Light Manager Air".
