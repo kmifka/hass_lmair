@@ -145,16 +145,34 @@ class LightManagerAirCoordinator(DataUpdateCoordinator):
         username = self.entry.data[CONF_USERNAME]
         password = self.entry.data[CONF_PASSWORD]
 
+        # Both calls talk to the device over HTTP and both can time out while
+        # Home Assistant is starting, when the network and the device are busy.
+        # ConfigEntryNotReady is the only exception Home Assistant retries with
+        # a backoff; any other one leaves the entry in "setup_error" until
+        # somebody reloads it by hand.
+        #
+        # Loading the fixtures used to sit outside this guard. On 22.08.2026 a
+        # restart timed out there, the error escaped, and the integration
+        # stayed dead - which took the balcony awning and the projection screen
+        # with it, silently, until the entry was reloaded. An awning that
+        # cannot be retracted is a safety problem when it is windy, so this has
+        # to recover on its own.
+        #
+        # OSError rather than ConnectionError, because the three ways this can
+        # fail are siblings and not subclasses of one another: lmair normalises
+        # most failures to the builtin ConnectionError, but requests raises its
+        # own ConnectionError and ReadTimeout, and a socket read that runs out
+        # of time raises TimeoutError. All three derive from OSError, and none
+        # of the last three is caught by "except ConnectionError".
         try:
             self.light_manager = await self.hass.async_add_executor_job(
                 LMAir, url, username, password
             )
-        except ConnectionError as e:
-            raise ConfigEntryNotReady(e)
-
-        self.zones, self.scenes = await self.hass.async_add_executor_job(
-            self.light_manager.load_fixtures, True
-        )
+            self.zones, self.scenes = await self.hass.async_add_executor_job(
+                self.light_manager.load_fixtures, True
+            )
+        except OSError as e:
+            raise ConfigEntryNotReady(e) from e
 
         device_registry = dr.async_get(self.hass)
         self._device_info = {
